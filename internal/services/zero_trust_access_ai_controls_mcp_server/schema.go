@@ -142,8 +142,17 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"status": schema.StringAttribute{
-				Computed: true,
-				Default:  stringdefault.StaticString("waiting"),
+				Description: "Current sync state of the server\nAvailable values: \"waiting\", \"ready\", \"stale\", \"error\".",
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOfCaseInsensitive(
+						"waiting",
+						"ready",
+						"stale",
+						"error",
+					),
+				},
+				Default: stringdefault.StaticString("waiting"),
 			},
 			"prompts": schema.ListAttribute{
 				Computed:   true,

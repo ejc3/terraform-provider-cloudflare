@@ -171,7 +171,16 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 										Computed:    true,
 									},
 									"status": schema.StringAttribute{
-										Computed: true,
+										Description: "Current sync state of the server\nAvailable values: \"waiting\", \"ready\", \"stale\", \"error\".",
+										Computed:    true,
+										Validators: []validator.String{
+											stringvalidator.OneOfCaseInsensitive(
+												"waiting",
+												"ready",
+												"stale",
+												"error",
+											),
+										},
 									},
 									"updated_prompts": schema.ListNestedAttribute{
 										Computed:   true,

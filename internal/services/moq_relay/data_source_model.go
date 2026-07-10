@@ -65,13 +65,7 @@ func (m *MoQRelayDataSourceModel) toListParams(_ context.Context) (params moq.Re
 }
 
 type MoQRelayConfigDataSourceModel struct {
-	LingeringSubscribe customfield.NestedObject[MoQRelayConfigLingeringSubscribeDataSourceModel] `tfsdk:"lingering_subscribe" json:"lingering_subscribe,computed"`
-	Upstreams          customfield.NestedObject[MoQRelayConfigUpstreamsDataSourceModel]          `tfsdk:"upstreams" json:"upstreams,computed"`
-}
-
-type MoQRelayConfigLingeringSubscribeDataSourceModel struct {
-	Enabled      types.Bool  `tfsdk:"enabled" json:"enabled,computed"`
-	MaxTimeoutMs types.Int64 `tfsdk:"max_timeout_ms" json:"max_timeout_ms,computed"`
+	Upstreams customfield.NestedObject[MoQRelayConfigUpstreamsDataSourceModel] `tfsdk:"upstreams" json:"upstreams,computed"`
 }
 
 type MoQRelayConfigUpstreamsDataSourceModel struct {

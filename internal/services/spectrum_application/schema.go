@@ -112,7 +112,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.Dynamic{customfield.NormalizeDynamicPlanModifier()},
 			},
 			"argo_smart_routing": schema.BoolAttribute{
-				Description: "Enables Argo Smart Routing for this application.\nNotes: Only available for TCP applications with traffic_type set to \"direct\".",
+				Description: "Enables Argo Smart Routing for this application.\nNotes: Only available for TCP or UDP applications with traffic_type set to \"direct\".",
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(false),

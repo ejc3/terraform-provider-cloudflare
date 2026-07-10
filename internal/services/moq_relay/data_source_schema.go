@@ -53,26 +53,9 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 				Computed: true,
 			},
 			"config": schema.SingleNestedAttribute{
-				Description: "upstreams and lingering_subscribe are mutually exclusive.",
-				Computed:    true,
-				CustomType:  customfield.NewNestedObjectType[MoQRelayConfigDataSourceModel](ctx),
+				Computed:   true,
+				CustomType: customfield.NewNestedObjectType[MoQRelayConfigDataSourceModel](ctx),
 				Attributes: map[string]schema.Attribute{
-					"lingering_subscribe": schema.SingleNestedAttribute{
-						Computed:   true,
-						CustomType: customfield.NewNestedObjectType[MoQRelayConfigLingeringSubscribeDataSourceModel](ctx),
-						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
-								Computed: true,
-							},
-							"max_timeout_ms": schema.Int64Attribute{
-								Description: "Relay-level ceiling on lingering subscribe timeout (ms). Default 30000.",
-								Computed:    true,
-								Validators: []validator.Int64{
-									int64validator.Between(0, 300000),
-								},
-							},
-						},
-					},
 					"upstreams": schema.SingleNestedAttribute{
 						Description: "Upstreams are external MOQT server publishers that a relay falls back\nto when it has no local publisher for a requested namespace/track.",
 						Computed:    true,

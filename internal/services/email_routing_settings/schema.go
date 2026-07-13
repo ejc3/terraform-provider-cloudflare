@@ -29,21 +29,29 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 			"id": schema.StringAttribute{
 				Description:   "Email Routing settings identifier.",
 				Computed:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown(), stringplanmodifier.RequiresReplace()},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"zone_id": schema.StringAttribute{
 				Description:   "Identifier.",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
+			"enabled": schema.BoolAttribute{
+				Description: "State of your zone Email Routing settings. No-op on this endpoint - use `POST`/`DELETE /zones/{zone_id}/email/routing/dns`.",
+				Optional:    true,
+			},
+			"skip_wizard": schema.BoolAttribute{
+				Description: "Flag to check if the user skipped the configuration wizard.",
+				Optional:    true,
+			},
+			"support_subaddress": schema.BoolAttribute{
+				Description: "Whether subaddressing (plus-addressing) is honored when matching incoming mail against routing rules.",
+				Optional:    true,
+			},
 			"created": schema.StringAttribute{
 				Description: "The date and time the settings have been created.",
 				Computed:    true,
 				CustomType:  timetypes.RFC3339Type{},
-			},
-			"enabled": schema.BoolAttribute{
-				Description: "State of the zone settings for Email Routing.",
-				Computed:    true,
 			},
 			"modified": schema.StringAttribute{
 				Description: "The date and time the settings have been modified.",
@@ -52,10 +60,6 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Description: "Domain of your zone.",
-				Computed:    true,
-			},
-			"skip_wizard": schema.BoolAttribute{
-				Description: "Flag to check if the user skipped the configuration wizard.",
 				Computed:    true,
 			},
 			"status": schema.StringAttribute{
@@ -70,10 +74,6 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						"unlocked",
 					),
 				},
-			},
-			"support_subaddress": schema.BoolAttribute{
-				Description: "Whether subaddressing (plus-addressing) is honored when matching incoming mail against routing rules.",
-				Computed:    true,
 			},
 			"tag": schema.StringAttribute{
 				Description:        "Email Routing settings tag. (Deprecated, replaced by Email Routing settings identifier)",

@@ -4,6 +4,8 @@ resource "cloudflare_custom_hostname" "example_custom_hostname" {
   custom_metadata = {
     foo = "string"
   }
+  custom_origin_server = "origin2.example.com"
+  custom_origin_sni = "sni.example.com"
   ssl = {
     bundle_method = "ubiquitous"
     certificate_authority = "google"

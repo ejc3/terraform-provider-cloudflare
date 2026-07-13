@@ -5,7 +5,7 @@ package zero_trust_dns_location
 import (
 	"context"
 
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -21,6 +21,13 @@ var _ resource.ResourceWithConfigValidators = (*ZeroTrustDNSLocationResource)(ni
 
 func ResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
+		MarkdownDescription: schemata.Description{
+			Scopes: []string{
+				"Cloudflare Zero Trust Secure DNS Locations Write",
+				"Zero Trust Read",
+				"Zero Trust Write",
+			},
+		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:      true,
@@ -48,9 +55,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"networks": schema.ListNestedAttribute{
 								Description: "Specify the list of allowed source IP network ranges for this endpoint. When the list is empty, the endpoint allows all source IPs. The list takes effect only if the endpoint is enabled for this location.",
-								Computed:    true,
 								Optional:    true,
-								CustomType:  customfield.NewNestedObjectListType[ZeroTrustDNSLocationEndpointsDOHNetworksModel](ctx),
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"network": schema.StringAttribute{
@@ -77,9 +82,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"networks": schema.ListNestedAttribute{
 								Description: "Specify the list of allowed source IP network ranges for this endpoint. When the list is empty, the endpoint allows all source IPs. The list takes effect only if the endpoint is enabled for this location.",
-								Computed:    true,
 								Optional:    true,
-								CustomType:  customfield.NewNestedObjectListType[ZeroTrustDNSLocationEndpointsDOTNetworksModel](ctx),
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"network": schema.StringAttribute{
@@ -111,9 +114,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"networks": schema.ListNestedAttribute{
 								Description: "Specify the list of allowed source IPv6 network ranges for this endpoint. When the list is empty, the endpoint allows all source IPs. The list takes effect only if the endpoint is enabled for this location.",
-								Computed:    true,
 								Optional:    true,
-								CustomType:  customfield.NewNestedObjectListType[ZeroTrustDNSLocationEndpointsIPV6NetworksModel](ctx),
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"network": schema.StringAttribute{
@@ -127,28 +128,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 			},
-			"client_default": schema.BoolAttribute{
-				Description: "Indicate whether this location is the default location.",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"dns_destination_ips_id": schema.StringAttribute{
-				Description: "Specify the identifier of the pair of IPv4 addresses assigned to this location. When creating a location, if this field is absent or set to null, the pair of shared IPv4 addresses (0e4a32c6-6fb8-4858-9296-98f51631e8e6) is auto-assigned. When updating a location, if this field is absent or set to null, the pre-assigned pair remains unchanged.",
-				Computed:    true,
-				Optional:    true,
-			},
-			"ecs_support": schema.BoolAttribute{
-				Description: "Indicate whether the location must resolve EDNS queries.",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(false),
-			},
 			"max_ttl": schema.SingleNestedAttribute{
 				Description: "Controls how DNS response TTLs are capped for this location relative to the account `max_ttl_secs` setting. Omitting `max_ttl` on update resets it to `inherit`.",
-				Computed:    true,
 				Optional:    true,
-				CustomType:  customfield.NewNestedObjectType[ZeroTrustDNSLocationMaxTTLModel](ctx),
 				Attributes: map[string]schema.Attribute{
 					"mode": schema.StringAttribute{
 						Description: "`inherit` uses the account `max_ttl_secs`. `override` uses this location's `ttl_secs`. `disabled` leaves returned TTLs unchanged.\nAvailable values: \"inherit\", \"override\", \"disabled\".",
@@ -172,9 +154,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"networks": schema.ListNestedAttribute{
 				Description: "Specify the list of network ranges from which requests at this location originate. The list takes effect only if it is non-empty and the IPv4 endpoint is enabled for this location.",
-				Computed:    true,
 				Optional:    true,
-				CustomType:  customfield.NewNestedObjectListType[ZeroTrustDNSLocationNetworksModel](ctx),
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"network": schema.StringAttribute{
@@ -183,6 +163,23 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						},
 					},
 				},
+			},
+			"client_default": schema.BoolAttribute{
+				Description: "Indicate whether this location is the default location.",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			"dns_destination_ips_id": schema.StringAttribute{
+				Description: "Specify the identifier of the pair of IPv4 addresses assigned to this location. When creating a location, if this field is absent or set to null, the pair of shared IPv4 addresses (0e4a32c6-6fb8-4858-9296-98f51631e8e6) is auto-assigned. When updating a location, if this field is absent or set to null, the pre-assigned pair remains unchanged.",
+				Computed:    true,
+				Optional:    true,
+			},
+			"ecs_support": schema.BoolAttribute{
+				Description: "Indicate whether the location must resolve EDNS queries.",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"created_at": schema.StringAttribute{
 				Computed:   true,

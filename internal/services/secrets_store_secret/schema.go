@@ -5,7 +5,6 @@ package secrets_store_secret
 import (
 	"context"
 
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -20,12 +19,6 @@ var _ resource.ResourceWithConfigValidators = (*SecretsStoreSecretResource)(nil)
 
 func ResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: schemata.Description{
-			Scopes: []string{
-				"Secrets Store Read",
-				"Secrets Store Write",
-			},
-		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "Secret identifier tag.",

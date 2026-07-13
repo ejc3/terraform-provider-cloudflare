@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -24,12 +23,6 @@ var _ resource.ResourceWithConfigValidators = (*ZeroTrustAccessIdentityProviderR
 
 func ResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: schemata.Description{
-			Scopes: []string{
-				"Access: Organizations, Identity Providers, and Groups Read",
-				"Access: Organizations, Identity Providers, and Groups Write",
-			},
-		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "UUID.",

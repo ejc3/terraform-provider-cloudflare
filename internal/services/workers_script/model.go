@@ -43,6 +43,7 @@ type WorkersScriptModel struct {
 	Handlers           customfield.List[types.String]                                `tfsdk:"handlers" json:"handlers,computed,no_refresh"`
 	Tags               customfield.Set[types.String]                                 `tfsdk:"tags" json:"tags,computed,no_refresh"`
 	CacheOptions       customfield.NestedObject[WorkersScriptCacheOptionsModel]      `tfsdk:"cache_options" json:"cache_options,computed,no_refresh"`
+	Exports            customfield.NestedObjectMap[WorkersScriptExportsModel]        `tfsdk:"exports" json:"exports,computed,no_refresh"`
 	NamedHandlers      customfield.NestedObjectList[WorkersScriptNamedHandlersModel] `tfsdk:"named_handlers" json:"named_handlers,computed,no_refresh"`
 	Observability      customfield.NestedObject[WorkersScriptObservabilityModel]     `tfsdk:"observability" json:"observability,computed,no_refresh"`
 	Placement          customfield.NestedObject[WorkersScriptPlacementModel]         `tfsdk:"placement" json:"placement,computed,no_refresh"`
@@ -180,8 +181,13 @@ type WorkersScriptMetadataCacheOptionsModel struct {
 }
 
 type WorkersScriptMetadataExportsModel struct {
-	Type  types.String                            `tfsdk:"type" json:"type,required"`
-	Cache *WorkersScriptMetadataExportsCacheModel `tfsdk:"cache" json:"cache,optional"`
+	Type          types.String                            `tfsdk:"type" json:"type,required"`
+	Cache         *WorkersScriptMetadataExportsCacheModel `tfsdk:"cache" json:"cache,optional"`
+	RenamedTo     types.String                            `tfsdk:"renamed_to" json:"renamed_to,optional"`
+	State         types.String                            `tfsdk:"state" json:"state,optional"`
+	Storage       types.String                            `tfsdk:"storage" json:"storage,optional"`
+	TransferFrom  types.String                            `tfsdk:"transfer_from" json:"transfer_from,optional"`
+	TransferredTo types.String                            `tfsdk:"transferred_to" json:"transferred_to,optional"`
 }
 
 type WorkersScriptMetadataExportsCacheModel struct {
@@ -288,6 +294,20 @@ type WorkersScriptMetadataTailConsumersModel struct {
 type WorkersScriptCacheOptionsModel struct {
 	Enabled           types.Bool `tfsdk:"enabled" json:"enabled,computed"`
 	CrossVersionCache types.Bool `tfsdk:"cross_version_cache" json:"cross_version_cache,computed"`
+}
+
+type WorkersScriptExportsModel struct {
+	Type          types.String                                             `tfsdk:"type" json:"type,computed"`
+	Cache         customfield.NestedObject[WorkersScriptExportsCacheModel] `tfsdk:"cache" json:"cache,computed"`
+	RenamedTo     types.String                                             `tfsdk:"renamed_to" json:"renamed_to,computed"`
+	State         types.String                                             `tfsdk:"state" json:"state,computed"`
+	Storage       types.String                                             `tfsdk:"storage" json:"storage,computed"`
+	TransferFrom  types.String                                             `tfsdk:"transfer_from" json:"transfer_from,computed"`
+	TransferredTo types.String                                             `tfsdk:"transferred_to" json:"transferred_to,computed"`
+}
+
+type WorkersScriptExportsCacheModel struct {
+	Enabled types.Bool `tfsdk:"enabled" json:"enabled,computed"`
 }
 
 type WorkersScriptNamedHandlersModel struct {

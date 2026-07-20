@@ -460,6 +460,12 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						Optional:    true,
 						ElementType: types.StringType,
 					},
+					"default_domain_enabled": schema.BoolAttribute{
+						Description: "When false, the instance is reachable only via a registered custom domain and the default <public_endpoint_id>.search.ai.cloudflare.com host returns 404. Requires at least one custom domain. Defaults to true. public_endpoint_params is replaced wholesale on update, so resend default_domain_enabled on every update to keep the default host off — omitting it resets to true.",
+						Computed:    true,
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
 					"enabled": schema.BoolAttribute{
 						Computed: true,
 						Optional: true,

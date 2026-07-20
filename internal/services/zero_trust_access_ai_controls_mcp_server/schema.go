@@ -63,6 +63,11 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"client_secret": schema.StringAttribute{
+				Description: "Pre-registered OAuth client_secret. Write-only - accepted on create/update when auth_credentials.auth_mode is 'manual'. Stored AES-GCM-encrypted in server_oauth_secrets; never returned by read endpoints.",
+				Optional:    true,
+				Sensitive:   true,
+			},
 			"description": schema.StringAttribute{
 				Optional: true,
 			},
@@ -166,6 +171,67 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				CustomType: customfield.NewListType[customfield.Map[jsontypes.Normalized]](ctx),
 				ElementType: types.MapType{
 					ElemType: jsontypes.NormalizedType{},
+				},
+			},
+			"auth_config_summary": schema.SingleNestedAttribute{
+				Description: "Safe subset of auth_credentials surfaced to the dashboard. Includes auth_mode (dcr|manual), has_client_secret, client_secret_version, and the OAuth endpoints + client_id for manual servers. Never includes the secret value.",
+				Computed:    true,
+				CustomType:  customfield.NewNestedObjectType[ZeroTrustAccessAIControlsMcpServerAuthConfigSummaryModel](ctx),
+				Attributes: map[string]schema.Attribute{
+					"auth_mode": schema.StringAttribute{
+						Description: `Available values: "dcr", "manual".`,
+						Computed:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOfCaseInsensitive("dcr", "manual"),
+						},
+					},
+					"client_secret_version": schema.Float64Attribute{
+						Computed: true,
+					},
+					"config": schema.SingleNestedAttribute{
+						Computed:   true,
+						CustomType: customfield.NewNestedObjectType[ZeroTrustAccessAIControlsMcpServerAuthConfigSummaryConfigModel](ctx),
+						Attributes: map[string]schema.Attribute{
+							"authorization_endpoint": schema.StringAttribute{
+								Computed: true,
+							},
+							"issuer": schema.StringAttribute{
+								Computed: true,
+							},
+							"resource": schema.StringAttribute{
+								Computed: true,
+							},
+							"revocation_endpoint": schema.StringAttribute{
+								Computed: true,
+							},
+							"token_endpoint": schema.StringAttribute{
+								Computed: true,
+							},
+						},
+					},
+					"has_client_secret": schema.BoolAttribute{
+						Computed: true,
+					},
+					"registration_info": schema.SingleNestedAttribute{
+						Computed:   true,
+						CustomType: customfield.NewNestedObjectType[ZeroTrustAccessAIControlsMcpServerAuthConfigSummaryRegistrationInfoModel](ctx),
+						Attributes: map[string]schema.Attribute{
+							"client_id": schema.StringAttribute{
+								Computed: true,
+							},
+							"redirect_uris": schema.ListAttribute{
+								Computed:    true,
+								CustomType:  customfield.NewListType[types.String](ctx),
+								ElementType: types.StringType,
+							},
+							"scope": schema.StringAttribute{
+								Computed: true,
+							},
+							"token_endpoint_auth_method": schema.StringAttribute{
+								Computed: true,
+							},
+						},
+					},
 				},
 			},
 			"error_details": schema.SingleNestedAttribute{

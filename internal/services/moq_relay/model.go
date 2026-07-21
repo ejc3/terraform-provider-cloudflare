@@ -43,7 +43,7 @@ type MoQRelayConfigUpstreamsModel struct {
 }
 
 type MoQRelayConfigUpstreamsUpstreamsModel struct {
-	URL types.String `tfsdk:"url" json:"url,optional"`
+	URL types.String `tfsdk:"url" json:"url,required"`
 }
 
 type MoQRelayIssuersModel struct {

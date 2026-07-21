@@ -499,14 +499,14 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Description: "The kind of export.\nAvailable values: \"worker\", \"durable-object\".",
+							Description: "Marks this entry as a Worker entrypoint export.\nAvailable values: \"worker\", \"durable-object\".",
 							Computed:    true,
 							Validators: []validator.String{
 								stringvalidator.OneOfCaseInsensitive("worker", "durable-object"),
 							},
 						},
 						"cache": schema.SingleNestedAttribute{
-							Description: "Cache override for this entrypoint. It applies only to\n`type: worker` entries and overrides the Worker's global\n`cache_options.enabled` for that entrypoint.",
+							Description: "Cache override for this entrypoint. Overrides the Worker's\nglobal `cache_options.enabled` for this entrypoint only.",
 							Computed:    true,
 							CustomType:  customfield.NewNestedObjectType[WorkerVersionExportsCacheDataSourceModel](ctx),
 							Attributes: map[string]schema.Attribute{
@@ -516,12 +516,8 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 								},
 							},
 						},
-						"renamed_to": schema.StringAttribute{
-							Description: "Destination class name for a `state: renamed` tombstone. The\ntarget must appear as a live (`created`) entry in the same\n`exports` map. Write-only: never present in GET responses.",
-							Computed:    true,
-						},
 						"state": schema.StringAttribute{
-							Description: "Lifecycle state of the export entry. Defaults to `created`\n(a normal, live export) when omitted.\n\n`deleted`, `renamed`, and `transferred` are tombstones:\nwrite-only lifecycle operations that retire, rename, or hand\noff a provisioned Durable Object namespace. They are applied\nat upload and are filtered out of GET responses, so a read\nonly ever returns `created` or `expecting-transfer`.\n\n`expecting-transfer` is a live export whose data is being\nreceived from another script via the two-phase transfer flow;\nit carries `storage` and `transfer_from`.\nAvailable values: \"created\", \"deleted\", \"renamed\", \"transferred\", \"expecting-transfer\".",
+							Description: "Live export. May be omitted; defaults to `created`.\nAvailable values: \"created\", \"deleted\", \"renamed\", \"transferred\", \"expecting-transfer\".",
 							Computed:    true,
 							Validators: []validator.String{
 								stringvalidator.OneOfCaseInsensitive(
@@ -534,19 +530,246 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 							},
 						},
 						"storage": schema.StringAttribute{
-							Description: "Storage backend for a `type: durable-object` export. Required\nfor live Durable Object entries (`created` and\n`expecting-transfer`). `sqlite` selects SQLite-backed storage;\n`legacy-kv` selects the legacy key-value storage.\nAvailable values: \"sqlite\", \"legacy-kv\".",
+							Description: "Durable Object storage backend. `sqlite` is the recommended (and\nonly) backend for new namespaces. `legacy-kv` is accepted only for\na class whose namespace already exists as KV-backed; the `exports`\nflow never provisions a new `legacy-kv` namespace.\nAvailable values: \"sqlite\", \"legacy-kv\".",
 							Computed:    true,
 							Validators: []validator.String{
 								stringvalidator.OneOfCaseInsensitive("sqlite", "legacy-kv"),
 							},
 						},
-						"transfer_from": schema.StringAttribute{
-							Description: "Source script for a `state: expecting-transfer` entry. The\nnamespace on this script is materialised from the source\nscript's data via the pending-transfer flow. Present on reads\nfor `expecting-transfer` entries.",
+						"container": schema.StringAttribute{
+							Description: "Name of the container (declared in the upload's\n`metadata.containers`) that backs this Durable Object. When\nset, the namespace is container-enabled. Valid only on live\nentries.",
+							Computed:    true,
+						},
+						"renamed_to": schema.StringAttribute{
+							Description: "The destination class name. Must differ from the source class\n(the map key) and must be declared as a live (`created`) entry\nin the same `exports` map. Write-only: never present in GET\nresponses.",
 							Computed:    true,
 						},
 						"transferred_to": schema.StringAttribute{
-							Description: "Destination script for a `state: transferred` tombstone. Must\nreference a script in the same account; cross-dispatch-namespace\ntransfers are rejected. Write-only: never present in GET\nresponses.",
+							Description: "The destination script name. Must be in the same account and\nthe same dispatch-namespace context (or both non-dispatch).\nCross-dispatch-namespace transfers are rejected. Write-only:\nnever present in GET responses.",
 							Computed:    true,
+						},
+						"transfer_from": schema.StringAttribute{
+							Description: "The source script name to receive the namespace from. Must be\nin the same account and dispatch-namespace context. Present on\nreads for `expecting-transfer` entries.",
+							Computed:    true,
+						},
+					},
+				},
+			},
+			"exports_reconciliation": schema.SingleNestedAttribute{
+				Description: "Summary of the declarative exports reconciliation that ran on\nthis upload. Populated only when the uploaded metadata included\nan `exports` block. Durable Object entries drive reconciliation;\n`type: worker` entries do not contribute to this summary.",
+				Computed:    true,
+				CustomType:  customfield.NewNestedObjectType[WorkerVersionExportsReconciliationDataSourceModel](ctx),
+				Attributes: map[string]schema.Attribute{
+					"created": schema.ListAttribute{
+						Description: "Class names for which a new namespace was provisioned.",
+						Computed:    true,
+						CustomType:  customfield.NewListType[types.String](ctx),
+						ElementType: types.StringType,
+					},
+					"deleted": schema.ListAttribute{
+						Description: "Class names whose namespace was deleted by a `deleted` tombstone.",
+						Computed:    true,
+						CustomType:  customfield.NewListType[types.String](ctx),
+						ElementType: types.StringType,
+					},
+					"info": schema.ListNestedAttribute{
+						Description: "Non-blocking info entries (stale tombstones, tombstone applied\nwith class still in code). See `exports_reconciliation_info`.",
+						Computed:    true,
+						CustomType:  customfield.NewNestedObjectListType[WorkerVersionExportsReconciliationInfoDataSourceModel](ctx),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"class": schema.StringAttribute{
+									Description: "The class name the info entry is about.",
+									Computed:    true,
+								},
+								"message": schema.StringAttribute{
+									Description: "Human-readable explanation.",
+									Computed:    true,
+								},
+								"scenario": schema.StringAttribute{
+									Description: "Stable, machine-readable tag identifying which reconciliation\nscenario produced an error, warning, or info entry. Clients may\nbranch on this value instead of parsing `message`.\nAvailable values: \"code_class_not_in_exports\", \"provisioned_class_missing_from_config\", \"config_export_not_in_code\", \"config_references_nonexistent_class\", \"orphaned_provisioned_namespace\", \"storage_type_mismatch\", \"free_tier_requires_sqlite\", \"invalid_export\", \"tombstone_delete_class_still_in_code\", \"tombstone_delete_blocked_by_external_bindings\", \"tombstone_renamed_to_occupied\", \"transferred_pending_not_found\", \"transferred_target_missing\", \"transferred_target_mismatch\", \"phase_one_transfer_source_missing\", \"phase_one_transfer_source_namespace_missing\", \"phase_one_transfer_target_class_provisioned\", \"phase_one_transfer_after_commit_mismatch\", \"phase_one_transfer_duplicate\", \"phase_one_transfer_target_in_dispatch_namespace\", \"phase_one_transfer_source_in_dispatch_namespace\", \"transferred_source_in_dispatch_namespace\", \"transferred_target_in_dispatch_namespace\", \"container_undeclared_reference\", \"container_class_not_durable_object\", \"container_wiring_inconsistent\", \"container_multiple_durable_objects\", \"transfer_container_parity_mismatch\", \"transfer_container_parity_mismatch_on_commit\", \"tombstone_class_still_in_code\", \"stale_tombstone\", \"transfer_receive_already_applied\", \"transfer_receive_cleanup_complete\".",
+									Computed:    true,
+									Validators: []validator.String{
+										stringvalidator.OneOfCaseInsensitive(
+											"code_class_not_in_exports",
+											"provisioned_class_missing_from_config",
+											"config_export_not_in_code",
+											"config_references_nonexistent_class",
+											"orphaned_provisioned_namespace",
+											"storage_type_mismatch",
+											"free_tier_requires_sqlite",
+											"invalid_export",
+											"tombstone_delete_class_still_in_code",
+											"tombstone_delete_blocked_by_external_bindings",
+											"tombstone_renamed_to_occupied",
+											"transferred_pending_not_found",
+											"transferred_target_missing",
+											"transferred_target_mismatch",
+											"phase_one_transfer_source_missing",
+											"phase_one_transfer_source_namespace_missing",
+											"phase_one_transfer_target_class_provisioned",
+											"phase_one_transfer_after_commit_mismatch",
+											"phase_one_transfer_duplicate",
+											"phase_one_transfer_target_in_dispatch_namespace",
+											"phase_one_transfer_source_in_dispatch_namespace",
+											"transferred_source_in_dispatch_namespace",
+											"transferred_target_in_dispatch_namespace",
+											"container_undeclared_reference",
+											"container_class_not_durable_object",
+											"container_wiring_inconsistent",
+											"container_multiple_durable_objects",
+											"transfer_container_parity_mismatch",
+											"transfer_container_parity_mismatch_on_commit",
+											"tombstone_class_still_in_code",
+											"stale_tombstone",
+											"transfer_receive_already_applied",
+											"transfer_receive_cleanup_complete",
+										),
+									},
+								},
+								"namespace_id": schema.StringAttribute{
+									Description: "The provisioned namespace the entry relates to, when applicable.",
+									Computed:    true,
+								},
+								"referencing_scripts": schema.ListAttribute{
+									Description: "Other Workers in the account that still bind to the affected\nclass. Advisory: while non-empty the tombstone is not yet safe\nto remove — redeploy these Workers with bindings re-pointed\nfirst.",
+									Computed:    true,
+									CustomType:  customfield.NewListType[types.String](ctx),
+									ElementType: types.StringType,
+								},
+							},
+						},
+					},
+					"removable_entries": schema.ListAttribute{
+						Description: "Source class names whose tombstone entry is now stale and safe\nto delete from `exports` (no remaining referencing scripts).",
+						Computed:    true,
+						CustomType:  customfield.NewListType[types.String](ctx),
+						ElementType: types.StringType,
+					},
+					"renamed": schema.ListNestedAttribute{
+						Description: "Applied `renamed` tombstones.",
+						Computed:    true,
+						CustomType:  customfield.NewNestedObjectListType[WorkerVersionExportsReconciliationRenamedDataSourceModel](ctx),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"from": schema.StringAttribute{
+									Description: "The original (source) class name.",
+									Computed:    true,
+								},
+								"to": schema.StringAttribute{
+									Description: "The new class name (`renamed_to`).",
+									Computed:    true,
+								},
+							},
+						},
+					},
+					"transfer_pending": schema.ListNestedAttribute{
+						Description: "Phase-1 transfer hints recorded on the target side.",
+						Computed:    true,
+						CustomType:  customfield.NewNestedObjectListType[WorkerVersionExportsReconciliationTransferPendingDataSourceModel](ctx),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"class": schema.StringAttribute{
+									Description: "The target-side class name awaiting transfer.",
+									Computed:    true,
+								},
+								"from": schema.StringAttribute{
+									Description: "The source script the namespace will be transferred from.",
+									Computed:    true,
+								},
+							},
+						},
+					},
+					"transferred": schema.ListNestedAttribute{
+						Description: "Committed `transferred` tombstones (phase-2).",
+						Computed:    true,
+						CustomType:  customfield.NewNestedObjectListType[WorkerVersionExportsReconciliationTransferredDataSourceModel](ctx),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"class": schema.StringAttribute{
+									Description: "The source class name that was transferred.",
+									Computed:    true,
+								},
+								"phase": schema.StringAttribute{
+									Description: "The transfer phase. Currently always `committed`.\nAvailable values: \"committed\".",
+									Computed:    true,
+									Validators: []validator.String{
+										stringvalidator.OneOfCaseInsensitive("committed"),
+									},
+								},
+								"to": schema.StringAttribute{
+									Description: "The destination script that now owns the namespace.",
+									Computed:    true,
+								},
+							},
+						},
+					},
+					"updated": schema.ListAttribute{
+						Description: "Class names whose provisioned namespace was mutated in place.",
+						Computed:    true,
+						CustomType:  customfield.NewListType[types.String](ctx),
+						ElementType: types.StringType,
+					},
+					"warnings": schema.ListNestedAttribute{
+						Description: "Non-blocking warnings. See `exports_reconciliation_warning`.",
+						Computed:    true,
+						CustomType:  customfield.NewNestedObjectListType[WorkerVersionExportsReconciliationWarningsDataSourceModel](ctx),
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"class": schema.StringAttribute{
+									Description: "The class name the warning is about.",
+									Computed:    true,
+								},
+								"message": schema.StringAttribute{
+									Description: "Human-readable explanation of the warning.",
+									Computed:    true,
+								},
+								"scenario": schema.StringAttribute{
+									Description: "Stable, machine-readable tag identifying which reconciliation\nscenario produced an error, warning, or info entry. Clients may\nbranch on this value instead of parsing `message`.\nAvailable values: \"code_class_not_in_exports\", \"provisioned_class_missing_from_config\", \"config_export_not_in_code\", \"config_references_nonexistent_class\", \"orphaned_provisioned_namespace\", \"storage_type_mismatch\", \"free_tier_requires_sqlite\", \"invalid_export\", \"tombstone_delete_class_still_in_code\", \"tombstone_delete_blocked_by_external_bindings\", \"tombstone_renamed_to_occupied\", \"transferred_pending_not_found\", \"transferred_target_missing\", \"transferred_target_mismatch\", \"phase_one_transfer_source_missing\", \"phase_one_transfer_source_namespace_missing\", \"phase_one_transfer_target_class_provisioned\", \"phase_one_transfer_after_commit_mismatch\", \"phase_one_transfer_duplicate\", \"phase_one_transfer_target_in_dispatch_namespace\", \"phase_one_transfer_source_in_dispatch_namespace\", \"transferred_source_in_dispatch_namespace\", \"transferred_target_in_dispatch_namespace\", \"container_undeclared_reference\", \"container_class_not_durable_object\", \"container_wiring_inconsistent\", \"container_multiple_durable_objects\", \"transfer_container_parity_mismatch\", \"transfer_container_parity_mismatch_on_commit\", \"tombstone_class_still_in_code\", \"stale_tombstone\", \"transfer_receive_already_applied\", \"transfer_receive_cleanup_complete\".",
+									Computed:    true,
+									Validators: []validator.String{
+										stringvalidator.OneOfCaseInsensitive(
+											"code_class_not_in_exports",
+											"provisioned_class_missing_from_config",
+											"config_export_not_in_code",
+											"config_references_nonexistent_class",
+											"orphaned_provisioned_namespace",
+											"storage_type_mismatch",
+											"free_tier_requires_sqlite",
+											"invalid_export",
+											"tombstone_delete_class_still_in_code",
+											"tombstone_delete_blocked_by_external_bindings",
+											"tombstone_renamed_to_occupied",
+											"transferred_pending_not_found",
+											"transferred_target_missing",
+											"transferred_target_mismatch",
+											"phase_one_transfer_source_missing",
+											"phase_one_transfer_source_namespace_missing",
+											"phase_one_transfer_target_class_provisioned",
+											"phase_one_transfer_after_commit_mismatch",
+											"phase_one_transfer_duplicate",
+											"phase_one_transfer_target_in_dispatch_namespace",
+											"phase_one_transfer_source_in_dispatch_namespace",
+											"transferred_source_in_dispatch_namespace",
+											"transferred_target_in_dispatch_namespace",
+											"container_undeclared_reference",
+											"container_class_not_durable_object",
+											"container_wiring_inconsistent",
+											"container_multiple_durable_objects",
+											"transfer_container_parity_mismatch",
+											"transfer_container_parity_mismatch_on_commit",
+											"tombstone_class_still_in_code",
+											"stale_tombstone",
+											"transfer_receive_already_applied",
+											"transfer_receive_cleanup_complete",
+										),
+									},
+								},
+								"namespace_id": schema.StringAttribute{
+									Description: "The provisioned namespace the warning relates to, when applicable.",
+									Computed:    true,
+								},
+							},
 						},
 					},
 				},

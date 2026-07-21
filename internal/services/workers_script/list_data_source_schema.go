@@ -94,14 +94,14 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"type": schema.StringAttribute{
-										Description: "The kind of export.\nAvailable values: \"worker\", \"durable-object\".",
+										Description: "Marks this entry as a Worker entrypoint export.\nAvailable values: \"worker\", \"durable-object\".",
 										Computed:    true,
 										Validators: []validator.String{
 											stringvalidator.OneOfCaseInsensitive("worker", "durable-object"),
 										},
 									},
 									"cache": schema.SingleNestedAttribute{
-										Description: "Cache override for this entrypoint. It applies only to\n`type: worker` entries and overrides the Worker's global\n`cache_options.enabled` for that entrypoint.",
+										Description: "Cache override for this entrypoint. Overrides the Worker's\nglobal `cache_options.enabled` for this entrypoint only.",
 										Computed:    true,
 										CustomType:  customfield.NewNestedObjectType[WorkersScriptsExportsCacheDataSourceModel](ctx),
 										Attributes: map[string]schema.Attribute{
@@ -111,12 +111,8 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 											},
 										},
 									},
-									"renamed_to": schema.StringAttribute{
-										Description: "Destination class name for a `state: renamed` tombstone. The\ntarget must appear as a live (`created`) entry in the same\n`exports` map. Write-only: never present in GET responses.",
-										Computed:    true,
-									},
 									"state": schema.StringAttribute{
-										Description: "Lifecycle state of the export entry. Defaults to `created`\n(a normal, live export) when omitted.\n\n`deleted`, `renamed`, and `transferred` are tombstones:\nwrite-only lifecycle operations that retire, rename, or hand\noff a provisioned Durable Object namespace. They are applied\nat upload and are filtered out of GET responses, so a read\nonly ever returns `created` or `expecting-transfer`.\n\n`expecting-transfer` is a live export whose data is being\nreceived from another script via the two-phase transfer flow;\nit carries `storage` and `transfer_from`.\nAvailable values: \"created\", \"deleted\", \"renamed\", \"transferred\", \"expecting-transfer\".",
+										Description: "Live export. May be omitted; defaults to `created`.\nAvailable values: \"created\", \"deleted\", \"renamed\", \"transferred\", \"expecting-transfer\".",
 										Computed:    true,
 										Validators: []validator.String{
 											stringvalidator.OneOfCaseInsensitive(
@@ -129,18 +125,26 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 										},
 									},
 									"storage": schema.StringAttribute{
-										Description: "Storage backend for a `type: durable-object` export. Required\nfor live Durable Object entries (`created` and\n`expecting-transfer`). `sqlite` selects SQLite-backed storage;\n`legacy-kv` selects the legacy key-value storage.\nAvailable values: \"sqlite\", \"legacy-kv\".",
+										Description: "Durable Object storage backend. `sqlite` is the recommended (and\nonly) backend for new namespaces. `legacy-kv` is accepted only for\na class whose namespace already exists as KV-backed; the `exports`\nflow never provisions a new `legacy-kv` namespace.\nAvailable values: \"sqlite\", \"legacy-kv\".",
 										Computed:    true,
 										Validators: []validator.String{
 											stringvalidator.OneOfCaseInsensitive("sqlite", "legacy-kv"),
 										},
 									},
-									"transfer_from": schema.StringAttribute{
-										Description: "Source script for a `state: expecting-transfer` entry. The\nnamespace on this script is materialised from the source\nscript's data via the pending-transfer flow. Present on reads\nfor `expecting-transfer` entries.",
+									"container": schema.StringAttribute{
+										Description: "Name of the container (declared in the upload's\n`metadata.containers`) that backs this Durable Object. When\nset, the namespace is container-enabled. Valid only on live\nentries.",
+										Computed:    true,
+									},
+									"renamed_to": schema.StringAttribute{
+										Description: "The destination class name. Must differ from the source class\n(the map key) and must be declared as a live (`created`) entry\nin the same `exports` map. Write-only: never present in GET\nresponses.",
 										Computed:    true,
 									},
 									"transferred_to": schema.StringAttribute{
-										Description: "Destination script for a `state: transferred` tombstone. Must\nreference a script in the same account; cross-dispatch-namespace\ntransfers are rejected. Write-only: never present in GET\nresponses.",
+										Description: "The destination script name. Must be in the same account and\nthe same dispatch-namespace context (or both non-dispatch).\nCross-dispatch-namespace transfers are rejected. Write-only:\nnever present in GET responses.",
+										Computed:    true,
+									},
+									"transfer_from": schema.StringAttribute{
+										Description: "The source script name to receive the namespace from. Must be\nin the same account and dispatch-namespace context. Present on\nreads for `expecting-transfer` entries.",
 										Computed:    true,
 									},
 								},

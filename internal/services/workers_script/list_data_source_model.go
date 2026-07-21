@@ -71,11 +71,12 @@ type WorkersScriptsCacheOptionsDataSourceModel struct {
 type WorkersScriptsExportsDataSourceModel struct {
 	Type          types.String                                                        `tfsdk:"type" json:"type,computed"`
 	Cache         customfield.NestedObject[WorkersScriptsExportsCacheDataSourceModel] `tfsdk:"cache" json:"cache,computed"`
-	RenamedTo     types.String                                                        `tfsdk:"renamed_to" json:"renamed_to,computed"`
 	State         types.String                                                        `tfsdk:"state" json:"state,computed"`
 	Storage       types.String                                                        `tfsdk:"storage" json:"storage,computed"`
-	TransferFrom  types.String                                                        `tfsdk:"transfer_from" json:"transfer_from,computed"`
+	Container     types.String                                                        `tfsdk:"container" json:"container,computed"`
+	RenamedTo     types.String                                                        `tfsdk:"renamed_to" json:"renamed_to,computed"`
 	TransferredTo types.String                                                        `tfsdk:"transferred_to" json:"transferred_to,computed"`
+	TransferFrom  types.String                                                        `tfsdk:"transfer_from" json:"transfer_from,computed"`
 }
 
 type WorkersScriptsExportsCacheDataSourceModel struct {

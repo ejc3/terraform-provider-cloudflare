@@ -12,16 +12,13 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/accounts"
 	"github.com/cloudflare/cloudflare-go/v7/option"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/apijson"
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/importpath"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/logging"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.ResourceWithConfigure = (*AccountSubscriptionResource)(nil)
 var _ resource.ResourceWithModifyPlan = (*AccountSubscriptionResource)(nil)
-var _ resource.ResourceWithImportState = (*AccountSubscriptionResource)(nil)
 
 func NewResource() resource.Resource {
 	return &AccountSubscriptionResource{}
@@ -71,9 +68,10 @@ func (r *AccountSubscriptionResource) Create(ctx context.Context, req resource.C
 	}
 	res := new(http.Response)
 	env := AccountSubscriptionResultEnvelope{*data}
-	_, err = r.client.Accounts.Subscriptions.New(
+	_, err = r.client.Accounts.Subscriptions.Update(
 		ctx,
-		accounts.SubscriptionNewParams{
+		data.SubscriptionIdentifier.ValueString(),
+		accounts.SubscriptionUpdateParams{
 			AccountID: cloudflare.F(data.AccountID.ValueString()),
 		},
 		option.WithRequestBody("application/json", dataBytes),
@@ -121,7 +119,7 @@ func (r *AccountSubscriptionResource) Update(ctx context.Context, req resource.U
 	env := AccountSubscriptionResultEnvelope{*data}
 	_, err = r.client.Accounts.Subscriptions.Update(
 		ctx,
-		data.ID.ValueString(),
+		data.SubscriptionIdentifier.ValueString(),
 		accounts.SubscriptionUpdateParams{
 			AccountID: cloudflare.F(data.AccountID.ValueString()),
 		},
@@ -145,42 +143,7 @@ func (r *AccountSubscriptionResource) Update(ctx context.Context, req resource.U
 }
 
 func (r *AccountSubscriptionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data *AccountSubscriptionModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res := new(http.Response)
-	env := AccountSubscriptionResultEnvelope{*data}
-	_, err := r.client.Accounts.Subscriptions.Get(
-		ctx,
-		accounts.SubscriptionGetParams{
-			AccountID: cloudflare.F(data.AccountID.ValueString()),
-		},
-		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
-	)
-	if res != nil && res.StatusCode == 404 {
-		resp.Diagnostics.AddWarning("Resource not found", "The resource was not found on the server and will be removed from state.")
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if err != nil {
-		resp.Diagnostics.AddError("failed to make http request", err.Error())
-		return
-	}
-	bytes, _ := io.ReadAll(res.Body)
-	err = apijson.Unmarshal(bytes, &env)
-	if err != nil {
-		resp.Diagnostics.AddError("failed to deserialize http request", err.Error())
-		return
-	}
-	data = &env.Result
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *AccountSubscriptionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -194,7 +157,7 @@ func (r *AccountSubscriptionResource) Delete(ctx context.Context, req resource.D
 
 	_, err := r.client.Accounts.Subscriptions.Delete(
 		ctx,
-		data.ID.ValueString(),
+		data.SubscriptionIdentifier.ValueString(),
 		accounts.SubscriptionDeleteParams{
 			AccountID: cloudflare.F(data.AccountID.ValueString()),
 		},
@@ -204,47 +167,6 @@ func (r *AccountSubscriptionResource) Delete(ctx context.Context, req resource.D
 		resp.Diagnostics.AddError("failed to make http request", err.Error())
 		return
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *AccountSubscriptionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	var data = new(AccountSubscriptionModel)
-
-	path := ""
-	diags := importpath.ParseImportID(
-		req.ID,
-		"<account_id>",
-		&path,
-	)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	data.AccountID = types.StringValue(path)
-
-	res := new(http.Response)
-	env := AccountSubscriptionResultEnvelope{*data}
-	_, err := r.client.Accounts.Subscriptions.Get(
-		ctx,
-		accounts.SubscriptionGetParams{
-			AccountID: cloudflare.F(path),
-		},
-		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
-	)
-	if err != nil {
-		resp.Diagnostics.AddError("failed to make http request", err.Error())
-		return
-	}
-	bytes, _ := io.ReadAll(res.Body)
-	err = apijson.Unmarshal(bytes, &env)
-	if err != nil {
-		resp.Diagnostics.AddError("failed to deserialize http request", err.Error())
-		return
-	}
-	data = &env.Result
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

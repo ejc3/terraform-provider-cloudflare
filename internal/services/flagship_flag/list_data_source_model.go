@@ -8,7 +8,6 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/flagship"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -59,7 +58,7 @@ type FlagshipFlagsRulesDataSourceModel struct {
 type FlagshipFlagsRulesConditionsDataSourceModel struct {
 	Attribute       types.String                                                                     `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                                                                     `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized                                                             `tfsdk:"value" json:"value,computed"`
+	Value           types.String                                                                     `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.NestedObjectList[FlagshipFlagsRulesConditionsClausesDataSourceModel] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                                                                     `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }
@@ -67,7 +66,7 @@ type FlagshipFlagsRulesConditionsDataSourceModel struct {
 type FlagshipFlagsRulesConditionsClausesDataSourceModel struct {
 	Attribute       types.String                                                                            `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                                                                            `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized                                                                    `tfsdk:"value" json:"value,computed"`
+	Value           types.String                                                                            `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.NestedObjectList[FlagshipFlagsRulesConditionsClausesClausesDataSourceModel] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                                                                            `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }
@@ -75,7 +74,7 @@ type FlagshipFlagsRulesConditionsClausesDataSourceModel struct {
 type FlagshipFlagsRulesConditionsClausesClausesDataSourceModel struct {
 	Attribute       types.String                                                                                   `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                                                                                   `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized                                                                           `tfsdk:"value" json:"value,computed"`
+	Value           types.String                                                                                   `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.NestedObjectList[FlagshipFlagsRulesConditionsClausesClausesClausesDataSourceModel] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                                                                                   `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }
@@ -83,7 +82,7 @@ type FlagshipFlagsRulesConditionsClausesClausesDataSourceModel struct {
 type FlagshipFlagsRulesConditionsClausesClausesClausesDataSourceModel struct {
 	Attribute       types.String                                                                                          `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                                                                                          `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized                                                                                  `tfsdk:"value" json:"value,computed"`
+	Value           types.String                                                                                          `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.NestedObjectList[FlagshipFlagsRulesConditionsClausesClausesClausesClausesDataSourceModel] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                                                                                          `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }
@@ -91,7 +90,7 @@ type FlagshipFlagsRulesConditionsClausesClausesClausesDataSourceModel struct {
 type FlagshipFlagsRulesConditionsClausesClausesClausesClausesDataSourceModel struct {
 	Attribute       types.String                                                                                                 `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                                                                                                 `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized                                                                                         `tfsdk:"value" json:"value,computed"`
+	Value           types.String                                                                                                 `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.NestedObjectList[FlagshipFlagsRulesConditionsClausesClausesClausesClausesClausesDataSourceModel] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                                                                                                 `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }
@@ -99,7 +98,7 @@ type FlagshipFlagsRulesConditionsClausesClausesClausesClausesDataSourceModel str
 type FlagshipFlagsRulesConditionsClausesClausesClausesClausesClausesDataSourceModel struct {
 	Attribute       types.String                   `tfsdk:"attribute" json:"attribute,computed"`
 	Operator        types.String                   `tfsdk:"operator" json:"operator,computed"`
-	Value           jsontypes.Normalized           `tfsdk:"value" json:"value,computed"`
+	Value           types.String                   `tfsdk:"value" json:"value,computed"`
 	Clauses         customfield.List[types.String] `tfsdk:"clauses" json:"clauses,computed"`
 	LogicalOperator types.String                   `tfsdk:"logical_operator" json:"logical_operator,computed"`
 }

@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -45,7 +44,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"default_variation": schema.StringAttribute{
-				Description: "Variation served when no rule matches or the flag is disabled. Must be a key in `variations`.",
+				Description: "Variation the API serves when the flag is off, or when it's on but no rule matches the context. Must be a key in `variations`.",
 				Required:    true,
 			},
 			"enabled": schema.BoolAttribute{
@@ -57,7 +56,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Required:    true,
 			},
 			"variations": schema.MapAttribute{
-				Description: "Map of variation name to value. All values must be the same type (boolean, string, number, or JSON object/array). Each serialized value must be 10KB or smaller.",
+				Description: "Map of variation name to value. All values share the same type (boolean, string, number, or JSON object/array), and each serialized value stays within 10KB.",
 				Required:    true,
 				ElementType: types.StringType,
 			},
@@ -94,9 +93,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 										},
 									},
 									"value": schema.StringAttribute{
-										Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-										Optional:    true,
-										CustomType:  jsontypes.NormalizedType{},
+										Optional: true,
 									},
 									"clauses": schema.ListNestedAttribute{
 										Optional: true,
@@ -125,9 +122,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 													},
 												},
 												"value": schema.StringAttribute{
-													Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-													Optional:    true,
-													CustomType:  jsontypes.NormalizedType{},
+													Optional: true,
 												},
 												"clauses": schema.ListNestedAttribute{
 													Optional: true,
@@ -156,9 +151,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 																},
 															},
 															"value": schema.StringAttribute{
-																Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-																Optional:    true,
-																CustomType:  jsontypes.NormalizedType{},
+																Optional: true,
 															},
 															"clauses": schema.ListNestedAttribute{
 																Optional: true,
@@ -187,9 +180,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 																			},
 																		},
 																		"value": schema.StringAttribute{
-																			Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-																			Optional:    true,
-																			CustomType:  jsontypes.NormalizedType{},
+																			Optional: true,
 																		},
 																		"clauses": schema.ListNestedAttribute{
 																			Optional: true,
@@ -218,9 +209,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 																						},
 																					},
 																					"value": schema.StringAttribute{
-																						Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-																						Optional:    true,
-																						CustomType:  jsontypes.NormalizedType{},
+																						Optional: true,
 																					},
 																					"clauses": schema.ListNestedAttribute{
 																						Optional: true,
@@ -249,9 +238,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 																									},
 																								},
 																								"value": schema.StringAttribute{
-																									Description: "Value to compare against the context attribute. Must be an array for `in` and `not_in`; numeric and ISO-8601 datetime strings are accepted by the ordering operators.",
-																									Optional:    true,
-																									CustomType:  jsontypes.NormalizedType{},
+																									Optional: true,
 																								},
 																								"clauses": schema.ListAttribute{
 																									Optional:    true,
@@ -318,14 +305,14 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 						},
 						"priority": schema.Int64Attribute{
-							Description: "Evaluation order; lower numbers are evaluated first. Must be unique across the flag's rules.",
+							Description: "Evaluation order: the API evaluates rules with lower numbers first. Must be unique across the flag's rules.",
 							Required:    true,
 							Validators: []validator.Int64{
 								int64validator.AtLeast(1),
 							},
 						},
 						"serve_variation": schema.StringAttribute{
-							Description: "Variation served when this rule matches. Must be a key in `variations`.",
+							Description: "Variation the API serves when this rule matches. Must be a key in `variations`.",
 							Required:    true,
 						},
 						"rollout": schema.SingleNestedAttribute{
@@ -351,7 +338,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional: true,
 			},
 			"type": schema.StringAttribute{
-				Description: "Value type of the flag's variations. Inferred from the variation values on write, so it may be omitted in requests.\nAvailable values: \"boolean\", \"string\", \"number\", \"json\".",
+				Description: "Value type of the flag's variations. The API infers this from the variation values on write, so you can omit it in requests.\nAvailable values: \"boolean\", \"string\", \"number\", \"json\".",
 				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.OneOfCaseInsensitive(

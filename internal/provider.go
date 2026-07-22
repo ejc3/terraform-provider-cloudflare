@@ -487,7 +487,6 @@ func (p *CloudflareProvider) Resources(ctx context.Context) []func() resource.Re
 		address_map.NewResource,
 		byo_ip_prefix.NewResource,
 		dls_prefix_binding.NewResource,
-		image.NewResource,
 		image_variant.NewResource,
 		magic_wan_gre_tunnel.NewResource,
 		magic_wan_ipsec_tunnel.NewResource,

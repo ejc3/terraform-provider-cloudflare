@@ -78,7 +78,7 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "Impersonation registry entry identifier",
+							Description: "Impersonation registry entry identifier.",
 							Computed:    true,
 						},
 						"comments": schema.StringAttribute{

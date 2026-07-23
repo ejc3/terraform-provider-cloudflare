@@ -73,7 +73,7 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description: "Trusted domain identifier",
+							Description: "Trusted domain identifier.",
 							Computed:    true,
 						},
 						"comments": schema.StringAttribute{

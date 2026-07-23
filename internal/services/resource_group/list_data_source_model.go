@@ -40,10 +40,10 @@ func (m *ResourceGroupsDataSourceModel) toListParams(_ context.Context) (params 
 }
 
 type ResourceGroupsResultDataSourceModel struct {
-	ID    types.String                                                     `tfsdk:"id" json:"id,computed"`
-	Scope customfield.NestedObjectList[ResourceGroupsScopeDataSourceModel] `tfsdk:"scope" json:"scope,computed"`
-	Meta  customfield.NestedObject[ResourceGroupsMetaDataSourceModel]      `tfsdk:"meta" json:"meta,computed"`
-	Name  types.String                                                     `tfsdk:"name" json:"name,computed"`
+	ID    types.String                                                 `tfsdk:"id" json:"id,computed"`
+	Scope customfield.NestedObject[ResourceGroupsScopeDataSourceModel] `tfsdk:"scope" json:"scope,computed"`
+	Meta  customfield.NestedObject[ResourceGroupsMetaDataSourceModel]  `tfsdk:"meta" json:"meta,computed"`
+	Name  types.String                                                 `tfsdk:"name" json:"name,computed"`
 }
 
 type ResourceGroupsScopeDataSourceModel struct {

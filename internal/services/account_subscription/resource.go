@@ -68,12 +68,17 @@ func (r *AccountSubscriptionResource) Create(ctx context.Context, req resource.C
 	}
 	res := new(http.Response)
 	env := AccountSubscriptionResultEnvelope{*data}
-	_, err = r.client.Accounts.Subscriptions.Update(
+	params := accounts.SubscriptionNewParams{}
+
+	if !data.AccountID.IsNull() {
+		params.AccountID = cloudflare.F(data.AccountID.ValueString())
+	} else {
+		params.ZoneID = cloudflare.F(data.ZoneID.ValueString())
+	}
+
+	_, err = r.client.Accounts.Subscriptions.New(
 		ctx,
-		data.SubscriptionIdentifier.ValueString(),
-		accounts.SubscriptionUpdateParams{
-			AccountID: cloudflare.F(data.AccountID.ValueString()),
-		},
+		params,
 		option.WithRequestBody("application/json", dataBytes),
 		option.WithResponseBodyInto(&res),
 		option.WithMiddleware(logging.Middleware(ctx)),
@@ -119,7 +124,7 @@ func (r *AccountSubscriptionResource) Update(ctx context.Context, req resource.U
 	env := AccountSubscriptionResultEnvelope{*data}
 	_, err = r.client.Accounts.Subscriptions.Update(
 		ctx,
-		data.SubscriptionIdentifier.ValueString(),
+		data.ID.ValueString(),
 		accounts.SubscriptionUpdateParams{
 			AccountID: cloudflare.F(data.AccountID.ValueString()),
 		},
@@ -143,7 +148,48 @@ func (r *AccountSubscriptionResource) Update(ctx context.Context, req resource.U
 }
 
 func (r *AccountSubscriptionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data *AccountSubscriptionModel
 
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	res := new(http.Response)
+	env := AccountSubscriptionResultEnvelope{*data}
+	params := accounts.SubscriptionGetParams{}
+
+	if !data.AccountID.IsNull() {
+		params.AccountID = cloudflare.F(data.AccountID.ValueString())
+	} else {
+		params.ZoneID = cloudflare.F(data.ZoneID.ValueString())
+	}
+
+	_, err := r.client.Accounts.Subscriptions.Get(
+		ctx,
+		params,
+		option.WithResponseBodyInto(&res),
+		option.WithMiddleware(logging.Middleware(ctx)),
+	)
+	if res != nil && res.StatusCode == 404 {
+		resp.Diagnostics.AddWarning("Resource not found", "The resource was not found on the server and will be removed from state.")
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("failed to make http request", err.Error())
+		return
+	}
+	bytes, _ := io.ReadAll(res.Body)
+	err = apijson.Unmarshal(bytes, &env)
+	if err != nil {
+		resp.Diagnostics.AddError("failed to deserialize http request", err.Error())
+		return
+	}
+	data = &env.Result
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *AccountSubscriptionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -157,7 +203,7 @@ func (r *AccountSubscriptionResource) Delete(ctx context.Context, req resource.D
 
 	_, err := r.client.Accounts.Subscriptions.Delete(
 		ctx,
-		data.SubscriptionIdentifier.ValueString(),
+		data.ID.ValueString(),
 		accounts.SubscriptionDeleteParams{
 			AccountID: cloudflare.F(data.AccountID.ValueString()),
 		},

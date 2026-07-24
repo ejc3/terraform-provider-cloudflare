@@ -8,18 +8,18 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ resource.ResourceWithConfigValidators = (*AccountSubscriptionResource)(nil)
+var _ datasource.DataSourceWithConfigValidators = (*AccountSubscriptionDataSource)(nil)
 
-func ResourceSchema(ctx context.Context) schema.Schema {
+func DataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemata.Description{
 			Scopes: []string{
@@ -29,87 +29,16 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description:   "Subscription identifier tag.",
-				Computed:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown()},
-			},
-			"account_id": schema.StringAttribute{
-				Description:   "The Account ID to use for this endpoint. Mutually exclusive with the Zone ID.",
-				Optional:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Description: "The Zone ID to use for this endpoint. Mutually exclusive with the Account ID.",
+				Computed:    true,
 			},
 			"zone_id": schema.StringAttribute{
-				Description:   "The Zone ID to use for this endpoint. Mutually exclusive with the Account ID.",
-				Optional:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
-			},
-			"frequency": schema.StringAttribute{
-				Description: "How often the subscription is renewed automatically.\nAvailable values: \"weekly\", \"monthly\", \"quarterly\", \"yearly\".",
+				Description: "The Zone ID to use for this endpoint. Mutually exclusive with the Account ID.",
 				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOfCaseInsensitive(
-						"weekly",
-						"monthly",
-						"quarterly",
-						"yearly",
-					),
-				},
 			},
-			"rate_plan": schema.SingleNestedAttribute{
-				Description: "The rate plan applied to the subscription.",
-				Computed:    true,
+			"account_id": schema.StringAttribute{
+				Description: "The Account ID to use for this endpoint. Mutually exclusive with the Zone ID.",
 				Optional:    true,
-				CustomType:  customfield.NewNestedObjectType[AccountSubscriptionRatePlanModel](ctx),
-				Attributes: map[string]schema.Attribute{
-					"id": schema.StringAttribute{
-						Description: "The ID of the rate plan.\nAvailable values: \"free\", \"lite\", \"pro\", \"pro_plus\", \"business\", \"enterprise\", \"partners_free\", \"partners_pro\", \"partners_business\", \"partners_enterprise\".",
-						Optional:    true,
-						Validators: []validator.String{
-							stringvalidator.OneOfCaseInsensitive(
-								"free",
-								"lite",
-								"pro",
-								"pro_plus",
-								"business",
-								"enterprise",
-								"partners_free",
-								"partners_pro",
-								"partners_business",
-								"partners_enterprise",
-							),
-						},
-					},
-					"currency": schema.StringAttribute{
-						Description: "The currency applied to the rate plan subscription.",
-						Computed:    true,
-						Optional:    true,
-					},
-					"externally_managed": schema.BoolAttribute{
-						Description: "Whether this rate plan is managed externally from Cloudflare.",
-						Computed:    true,
-						Optional:    true,
-					},
-					"is_contract": schema.BoolAttribute{
-						Description: "Whether a rate plan is enterprise-based (or newly adopted term contract).",
-						Computed:    true,
-						Optional:    true,
-					},
-					"public_name": schema.StringAttribute{
-						Description: "The full name of the rate plan.",
-						Computed:    true,
-						Optional:    true,
-					},
-					"scope": schema.StringAttribute{
-						Description: "The scope that this rate plan applies to.",
-						Computed:    true,
-						Optional:    true,
-					},
-					"sets": schema.ListAttribute{
-						Description: "The list of sets this rate plan applies to. Returns array of strings.",
-						Optional:    true,
-						ElementType: types.StringType,
-					},
-				},
 			},
 			"currency": schema.StringAttribute{
 				Description: "The monetary unit in which pricing information is displayed.",
@@ -124,6 +53,18 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Description: "When the current billing period started. May match initial_period_start if this is the first period.",
 				Computed:    true,
 				CustomType:  timetypes.RFC3339Type{},
+			},
+			"frequency": schema.StringAttribute{
+				Description: "How often the subscription is renewed automatically.\nAvailable values: \"weekly\", \"monthly\", \"quarterly\", \"yearly\".",
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOfCaseInsensitive(
+						"weekly",
+						"monthly",
+						"quarterly",
+						"yearly",
+					),
+				},
 			},
 			"price": schema.Float64Attribute{
 				Description: "The price of the subscription that will be billed, in US dollars.",
@@ -144,14 +85,67 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 					),
 				},
 			},
+			"rate_plan": schema.SingleNestedAttribute{
+				Description: "The rate plan applied to the subscription.",
+				Computed:    true,
+				CustomType:  customfield.NewNestedObjectType[AccountSubscriptionRatePlanDataSourceModel](ctx),
+				Attributes: map[string]schema.Attribute{
+					"id": schema.StringAttribute{
+						Description: "The ID of the rate plan.\nAvailable values: \"free\", \"lite\", \"pro\", \"pro_plus\", \"business\", \"enterprise\", \"partners_free\", \"partners_pro\", \"partners_business\", \"partners_enterprise\".",
+						Computed:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOfCaseInsensitive(
+								"free",
+								"lite",
+								"pro",
+								"pro_plus",
+								"business",
+								"enterprise",
+								"partners_free",
+								"partners_pro",
+								"partners_business",
+								"partners_enterprise",
+							),
+						},
+					},
+					"currency": schema.StringAttribute{
+						Description: "The currency applied to the rate plan subscription.",
+						Computed:    true,
+					},
+					"externally_managed": schema.BoolAttribute{
+						Description: "Whether this rate plan is managed externally from Cloudflare.",
+						Computed:    true,
+					},
+					"is_contract": schema.BoolAttribute{
+						Description: "Whether a rate plan is enterprise-based (or newly adopted term contract).",
+						Computed:    true,
+					},
+					"public_name": schema.StringAttribute{
+						Description: "The full name of the rate plan.",
+						Computed:    true,
+					},
+					"scope": schema.StringAttribute{
+						Description: "The scope that this rate plan applies to.",
+						Computed:    true,
+					},
+					"sets": schema.ListAttribute{
+						Description: "The list of sets this rate plan applies to. Returns array of strings.",
+						Computed:    true,
+						CustomType:  customfield.NewListType[types.String](ctx),
+						ElementType: types.StringType,
+					},
+				},
+			},
 		},
 	}
 }
 
-func (r *AccountSubscriptionResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = ResourceSchema(ctx)
+func (d *AccountSubscriptionDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = DataSourceSchema(ctx)
 }
 
-func (r *AccountSubscriptionResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
-	return []resource.ConfigValidator{}
+func (d *AccountSubscriptionDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.Conflicting(path.MatchRoot("account_id"), path.MatchRoot("zone_id")),
+	}
 }

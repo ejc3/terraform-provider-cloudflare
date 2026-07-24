@@ -69,13 +69,14 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						Optional:    true,
 					},
 					"r2_bucket_sippy_provider": schema.StringAttribute{
-						Description: `Available values: "aws", "gcs", "s3".`,
+						Description: `Available values: "aws", "gcs", "s3", "azure".`,
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOfCaseInsensitive(
 								"aws",
 								"gcs",
 								"s3",
+								"azure",
 							),
 						},
 					},
@@ -100,6 +101,24 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 					"bucket_url": schema.StringAttribute{
 						Description: "URL to the S3-compatible API of the bucket.",
 						Optional:    true,
+					},
+					"account_key": schema.StringAttribute{
+						Description: "Access key for the Azure Storage account. Mutually exclusive with sasToken.",
+						Optional:    true,
+						Sensitive:   true,
+					},
+					"account_name": schema.StringAttribute{
+						Description: "Name of the Azure Storage account.",
+						Optional:    true,
+					},
+					"container": schema.StringAttribute{
+						Description: "Name of the Azure Blob Storage container.",
+						Optional:    true,
+					},
+					"sas_token": schema.StringAttribute{
+						Description: "Shared Access Signature token for the Azure Storage account. Mutually exclusive with accountKey.",
+						Optional:    true,
+						Sensitive:   true,
 					},
 				},
 			},

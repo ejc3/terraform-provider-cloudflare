@@ -34,7 +34,7 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"custom_csr_id": schema.StringAttribute{
 				Description: "Custom CSR identifier tag.",
-				Required:    true,
+				Optional:    true,
 			},
 			"account_id": schema.StringAttribute{
 				Description: "The Account ID to use for this endpoint. Mutually exclusive with the Zone ID.",
@@ -102,6 +102,31 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 				CustomType:  customfield.NewListType[types.String](ctx),
 				ElementType: types.StringType,
 			},
+			"filter": schema.SingleNestedAttribute{
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"direction": schema.StringAttribute{
+						Description: "The direction to sort by.\nAvailable values: \"asc\", \"desc\".",
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOfCaseInsensitive("asc", "desc"),
+						},
+					},
+					"order": schema.StringAttribute{
+						Description: "The field to sort the returned custom CSRs by.\nAvailable values: \"name\", \"account_tag\", \"created_at\".",
+						Computed:    true,
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOfCaseInsensitive(
+								"name",
+								"account_tag",
+								"created_at",
+							),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -112,6 +137,7 @@ func (d *CustomCsrDataSource) Schema(ctx context.Context, req datasource.SchemaR
 
 func (d *CustomCsrDataSource) ConfigValidators(_ context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{
+		datasourcevalidator.ExactlyOneOf(path.MatchRoot("custom_csr_id"), path.MatchRoot("filter")),
 		datasourcevalidator.Conflicting(path.MatchRoot("account_id"), path.MatchRoot("zone_id")),
 	}
 }

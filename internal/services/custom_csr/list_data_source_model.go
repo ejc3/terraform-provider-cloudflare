@@ -20,12 +20,21 @@ type CustomCsrsResultListDataSourceEnvelope struct {
 type CustomCsrsDataSourceModel struct {
 	AccountID types.String                                                  `tfsdk:"account_id" path:"account_id,optional"`
 	ZoneID    types.String                                                  `tfsdk:"zone_id" path:"zone_id,optional"`
+	Direction types.String                                                  `tfsdk:"direction" query:"direction,computed_optional"`
+	Order     types.String                                                  `tfsdk:"order" query:"order,computed_optional"`
 	MaxItems  types.Int64                                                   `tfsdk:"max_items"`
 	Result    customfield.NestedObjectList[CustomCsrsResultDataSourceModel] `tfsdk:"result"`
 }
 
 func (m *CustomCsrsDataSourceModel) toListParams(_ context.Context) (params custom_csrs.CustomCsrListParams, diags diag.Diagnostics) {
 	params = custom_csrs.CustomCsrListParams{}
+
+	if !m.Direction.IsNull() {
+		params.Direction = cloudflare.F(custom_csrs.CustomCsrListParamsDirection(m.Direction.ValueString()))
+	}
+	if !m.Order.IsNull() {
+		params.Order = cloudflare.F(custom_csrs.CustomCsrListParamsOrder(m.Order.ValueString()))
+	}
 
 	if !m.AccountID.IsNull() {
 		params.AccountID = cloudflare.F(m.AccountID.ValueString())

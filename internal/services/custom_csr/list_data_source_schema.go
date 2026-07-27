@@ -37,6 +37,26 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 				Description: "The Zone ID to use for this endpoint. Mutually exclusive with the Account ID.",
 				Optional:    true,
 			},
+			"direction": schema.StringAttribute{
+				Description: "The direction to sort by.\nAvailable values: \"asc\", \"desc\".",
+				Computed:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOfCaseInsensitive("asc", "desc"),
+				},
+			},
+			"order": schema.StringAttribute{
+				Description: "The field to sort the returned custom CSRs by.\nAvailable values: \"name\", \"account_tag\", \"created_at\".",
+				Computed:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOfCaseInsensitive(
+						"name",
+						"account_tag",
+						"created_at",
+					),
+				},
+			},
 			"max_items": schema.Int64Attribute{
 				Description: "Max items to fetch, default: 1000",
 				Optional:    true,

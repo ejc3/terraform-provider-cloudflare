@@ -425,10 +425,10 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 											},
 										},
 										"parse_type": schema.StringAttribute{
-											Description: `Available values: "sitemap", "crawl".`,
+											Description: `Available values: "sitemap", "discover".`,
 											Computed:    true,
 											Validators: []validator.String{
-												stringvalidator.OneOfCaseInsensitive("sitemap", "crawl"),
+												stringvalidator.OneOfCaseInsensitive("sitemap", "discover"),
 											},
 										},
 									},

@@ -18,7 +18,7 @@ type PagesProjectModel struct {
 	Name                 types.String                                                   `tfsdk:"name" json:"name,required"`
 	AccountID            types.String                                                   `tfsdk:"account_id" path:"account_id,required"`
 	ProductionBranch     types.String                                                   `tfsdk:"production_branch" json:"production_branch,required"`
-	BuildConfig          customfield.NestedObject[PagesProjectBuildConfigModel]         `tfsdk:"build_config" json:"build_config,computed_optional"`
+	BuildConfig          customfield.NestedObject[PagesProjectBuildConfigModel]         `tfsdk:"build_config" json:"build_config,optional"`
 	Source               *PagesProjectSourceModel                                       `tfsdk:"source" json:"source,optional"`
 	DeploymentConfigs    customfield.NestedObject[PagesProjectDeploymentConfigsModel]   `tfsdk:"deployment_configs" json:"deployment_configs,computed_optional"`
 	CreatedOn            timetypes.RFC3339                                              `tfsdk:"created_on" json:"created_on,computed" format:"date-time"`
@@ -42,12 +42,12 @@ func (m PagesProjectModel) MarshalJSONForUpdate(state PagesProjectModel) (data [
 }
 
 type PagesProjectBuildConfigModel struct {
-	BuildCaching      types.Bool   `tfsdk:"build_caching" json:"build_caching,computed_optional"`
-	BuildCommand      types.String `tfsdk:"build_command" json:"build_command,computed_optional"`
-	DestinationDir    types.String `tfsdk:"destination_dir" json:"destination_dir,computed_optional"`
-	RootDir           types.String `tfsdk:"root_dir" json:"root_dir,computed_optional"`
-	WebAnalyticsTag   types.String `tfsdk:"web_analytics_tag" json:"web_analytics_tag,computed_optional"`
-	WebAnalyticsToken types.String `tfsdk:"web_analytics_token" json:"web_analytics_token,computed_optional"`
+	BuildCaching      types.Bool   `tfsdk:"build_caching" json:"build_caching,optional"`
+	BuildCommand      types.String `tfsdk:"build_command" json:"build_command,optional"`
+	DestinationDir    types.String `tfsdk:"destination_dir" json:"destination_dir,optional"`
+	RootDir           types.String `tfsdk:"root_dir" json:"root_dir,optional"`
+	WebAnalyticsTag   types.String `tfsdk:"web_analytics_tag" json:"web_analytics_tag,optional"`
+	WebAnalyticsToken types.String `tfsdk:"web_analytics_token" json:"web_analytics_token,optional"`
 }
 
 type PagesProjectSourceModel struct {
@@ -59,11 +59,11 @@ type PagesProjectSourceConfigModel struct {
 	DeploymentsEnabled           types.Bool                     `tfsdk:"deployments_enabled" json:"deployments_enabled,optional"`
 	Owner                        types.String                   `tfsdk:"owner" json:"owner,optional"`
 	OwnerID                      types.String                   `tfsdk:"owner_id" json:"owner_id,optional"`
-	PathExcludes                 customfield.List[types.String] `tfsdk:"path_excludes" json:"path_excludes,computed_optional"`
-	PathIncludes                 customfield.List[types.String] `tfsdk:"path_includes" json:"path_includes,computed_optional"`
+	PathExcludes                 customfield.List[types.String] `tfsdk:"path_excludes" json:"path_excludes,optional"`
+	PathIncludes                 customfield.List[types.String] `tfsdk:"path_includes" json:"path_includes,optional"`
 	PrCommentsEnabled            types.Bool                     `tfsdk:"pr_comments_enabled" json:"pr_comments_enabled,optional"`
-	PreviewBranchExcludes        customfield.List[types.String] `tfsdk:"preview_branch_excludes" json:"preview_branch_excludes,computed_optional"`
-	PreviewBranchIncludes        customfield.List[types.String] `tfsdk:"preview_branch_includes" json:"preview_branch_includes,computed_optional"`
+	PreviewBranchExcludes        customfield.List[types.String] `tfsdk:"preview_branch_excludes" json:"preview_branch_excludes,optional"`
+	PreviewBranchIncludes        customfield.List[types.String] `tfsdk:"preview_branch_includes" json:"preview_branch_includes,optional"`
 	PreviewDeploymentSetting     types.String                   `tfsdk:"preview_deployment_setting" json:"preview_deployment_setting,optional"`
 	ProductionBranch             types.String                   `tfsdk:"production_branch" json:"production_branch,optional"`
 	ProductionDeploymentsEnabled types.Bool                     `tfsdk:"production_deployments_enabled" json:"production_deployments_enabled,optional"`

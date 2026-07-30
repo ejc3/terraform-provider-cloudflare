@@ -17,8 +17,8 @@ type ZeroTrustDNSLocationModel struct {
 	AccountID                 types.String                          `tfsdk:"account_id" path:"account_id,required"`
 	Name                      types.String                          `tfsdk:"name" json:"name,required"`
 	Endpoints                 *ZeroTrustDNSLocationEndpointsModel   `tfsdk:"endpoints" json:"endpoints,optional"`
-	MaxTTL                    *ZeroTrustDNSLocationMaxTTLModel      `tfsdk:"max_ttl" json:"max_ttl,optional"`
-	Networks                  *[]*ZeroTrustDNSLocationNetworksModel `tfsdk:"networks" json:"networks,optional"`
+	MaxTTL                    *ZeroTrustDNSLocationMaxTTLModel      `tfsdk:"max_ttl" json:"max_ttl,computed_optional"`
+	Networks                  *[]*ZeroTrustDNSLocationNetworksModel `tfsdk:"networks" json:"networks,computed_optional"`
 	ClientDefault             types.Bool                            `tfsdk:"client_default" json:"client_default,computed_optional"`
 	DNSDestinationIPsID       types.String                          `tfsdk:"dns_destination_ips_id" json:"dns_destination_ips_id,computed_optional"`
 	ECSSupport                types.Bool                            `tfsdk:"ecs_support" json:"ecs_support,computed_optional"`
@@ -48,7 +48,7 @@ type ZeroTrustDNSLocationEndpointsModel struct {
 
 type ZeroTrustDNSLocationEndpointsDOHModel struct {
 	Enabled      types.Bool                                        `tfsdk:"enabled" json:"enabled,computed_optional"`
-	Networks     *[]*ZeroTrustDNSLocationEndpointsDOHNetworksModel `tfsdk:"networks" json:"networks,optional"`
+	Networks     *[]*ZeroTrustDNSLocationEndpointsDOHNetworksModel `tfsdk:"networks" json:"networks,computed_optional"`
 	RequireToken types.Bool                                        `tfsdk:"require_token" json:"require_token,computed_optional"`
 }
 
@@ -58,7 +58,7 @@ type ZeroTrustDNSLocationEndpointsDOHNetworksModel struct {
 
 type ZeroTrustDNSLocationEndpointsDOTModel struct {
 	Enabled  types.Bool                                        `tfsdk:"enabled" json:"enabled,computed_optional"`
-	Networks *[]*ZeroTrustDNSLocationEndpointsDOTNetworksModel `tfsdk:"networks" json:"networks,optional"`
+	Networks *[]*ZeroTrustDNSLocationEndpointsDOTNetworksModel `tfsdk:"networks" json:"networks,computed_optional"`
 }
 
 type ZeroTrustDNSLocationEndpointsDOTNetworksModel struct {
@@ -71,7 +71,7 @@ type ZeroTrustDNSLocationEndpointsIPV4Model struct {
 
 type ZeroTrustDNSLocationEndpointsIPV6Model struct {
 	Enabled  types.Bool                                         `tfsdk:"enabled" json:"enabled,computed_optional"`
-	Networks *[]*ZeroTrustDNSLocationEndpointsIPV6NetworksModel `tfsdk:"networks" json:"networks,optional"`
+	Networks *[]*ZeroTrustDNSLocationEndpointsIPV6NetworksModel `tfsdk:"networks" json:"networks,computed_optional"`
 }
 
 type ZeroTrustDNSLocationEndpointsIPV6NetworksModel struct {

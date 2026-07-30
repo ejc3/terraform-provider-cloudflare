@@ -83,7 +83,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						Description: "Name of the AWS S3 bucket.",
 						Optional:    true,
 					},
-					"r2_bucket_sippy_provider": schema.StringAttribute{
+					"cloud_provider": schema.StringAttribute{
 						Description: `Available values: "aws", "gcs", "s3", "azure".`,
 						Optional:    true,
 						Validators: []validator.String{

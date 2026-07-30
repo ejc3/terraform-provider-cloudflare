@@ -40,6 +40,7 @@ type TargetHyperdriveConfigModel struct {
 	MTLS                  *TargetHyperdriveConfigMTLSModel   `tfsdk:"mtls"`
 	CreatedOn             timetypes.RFC3339                  `tfsdk:"created_on"`
 	ModifiedOn            timetypes.RFC3339                  `tfsdk:"modified_on"`
+	RestartedOn           timetypes.RFC3339                  `tfsdk:"restarted_on"`
 }
 
 // TargetHyperdriveConfigOriginModel represents the target origin nested object (v500).

@@ -64,14 +64,6 @@ func (r *DNSRecordResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	if data.Proxied.ValueBool() && data.TTL.ValueFloat64() != 1 {
-		resp.Diagnostics.AddError(
-			"ttl must be set to 1 when `proxied` is true",
-			"When a DNS record is marked as `proxied` the TTL must be 1 as Cloudflare will control the TTL internally.",
-		)
-		return
-	}
-
 	dataBytes, err := data.MarshalJSON()
 	if err != nil {
 		resp.Diagnostics.AddError("failed to serialize http request", err.Error())
@@ -99,8 +91,6 @@ func (r *DNSRecordResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 	data = &env.Result
-
-	normalizeSettings(ctx, data, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -151,8 +141,6 @@ func (r *DNSRecordResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 	data = &env.Result
 
-	normalizeSettings(ctx, data, &resp.Diagnostics)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -164,10 +152,6 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// Save the prior state name before the API call so we can derive the zone
-	// suffix by comparing it with the FQDN the API returns.
-	priorName := data.Name.ValueString()
 
 	res := new(http.Response)
 	env := DNSRecordResultEnvelope{*data}
@@ -196,15 +180,6 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	data = &env.Result
-
-	// avoid unnecessary diff: the Cloudflare API omits the settings object entirely for
-	// non-proxied CNAME records. Unconditionally materialize settings as a known object
-	// with false defaults so state is stable against a config of settings = { flatten_cname = false }.
-	normalizeSettings(ctx, data, &resp.Diagnostics)
-
-	// Derive the zone name by comparing the prior state name with the API's FQDN
-	// and store it in private state for ModifyPlan's FQDN normalization.
-	deriveAndSaveZoneName(ctx, priorName, data.Name.ValueString(), resp.Private)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -276,8 +251,7 @@ func (r *DNSRecordResource) ImportState(ctx context.Context, req resource.Import
 	}
 	data = &env.Result
 
-	// avoid unnecessary diff: same normalization as Read()
-	normalizeSettings(ctx, data, &resp.Diagnostics)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
+
+

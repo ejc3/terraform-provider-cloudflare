@@ -1,5 +1,62 @@
 # Changelog
 
+## 5.23.0 (2026-07-30)
+
+Full Changelog: [v5.22.0...v5.23.0](https://github.com/cloudflare/terraform-provider-cloudflare/compare/v5.22.0...v5.23.0)
+
+### ⚠ BREAKING CHANGES
+
+The following provider-level configuration attributes have been renamed or removed. Existing Terraform configurations that reference the old attribute names must be updated before `terraform plan` will succeed. Environment variable names (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_API_KEY`, `CLOUDFLARE_EMAIL`, `CLOUDFLARE_API_USER_SERVICE_KEY`) are unchanged and continue to work.
+
+* **provider:** `email` has been renamed to `api_email`. Update your provider block: `email = "..."` becomes `api_email = "..."`. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+* **provider:** `api_user_service_key` has been renamed to `user_service_key`. Update your provider block: `api_user_service_key = "..."` becomes `user_service_key = "..."`. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+* **provider:** `user_agent_operator_suffix` has been removed. Remove any `user_agent_operator_suffix = "..."` from your provider block. The Terraform version is now always included in the User-Agent header. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+
+
+### New Data Sources
+
+* **cloudflare_zero_trust_dlp_custom_prompt_topic:** add data source for DLP custom prompt topics ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+* **cloudflare_zero_trust_dlp_custom_prompt_topics:** add list data source for DLP custom prompt topics ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+
+
+### New Resources
+
+* **cloudflare_oauth_client:** add OAuth client resource ([47aa31e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/47aa31edc9))
+
+
+### Features
+
+* **argo:** add comprehensive acceptance tests ([769a23f](https://github.com/cloudflare/terraform-provider-cloudflare/commit/769a23f204))
+* bump Go SDK version to v7.8.0 ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+* **hyperdrive_config:** add v4 to v5 state migration ([cdd5ca6](https://github.com/cloudflare/terraform-provider-cloudflare/commit/cdd5ca697d))
+
+
+### Bug Fixes
+
+* **d1_database:** initialize read_replication in state upgrader to prevent 400 error ([298799b](https://github.com/cloudflare/terraform-provider-cloudflare/commit/298799b3e0))
+* **load_balancer_pool:** preserve origins order to prevent perpetual drift ([aad09cc](https://github.com/cloudflare/terraform-provider-cloudflare/commit/aad09ccc39))
+* **zero_trust_access_ai_controls_mcp_portal:** migrate servers state from list to set ([9766b3a](https://github.com/cloudflare/terraform-provider-cloudflare/commit/9766b3a5e4))
+* **zero_trust_access_policy:** resolve perpetual diff by calling normalization in CRUD ([497f06b](https://github.com/cloudflare/terraform-provider-cloudflare/commit/497f06bdbd))
+* **zero_trust_device_custom_profile:** resolve perpetual drift on default, include, target_tests, and exclude nested attributes ([f74cecf](https://github.com/cloudflare/terraform-provider-cloudflare/commit/f74cecf3ae))
+* **zero_trust_device_custom_profile:** address review feedback on normalization ([969b35d](https://github.com/cloudflare/terraform-provider-cloudflare/commit/969b35dbef))
+* **zero_trust_organization:** normalize mfa_required_for_all_apps to prevent perpetual diff ([001c28e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/001c28eab4))
+
+
+### Chores
+
+* add .terraform-registry for ownership transfer ([d33bc90](https://github.com/cloudflare/terraform-provider-cloudflare/commit/d33bc904d8))
+* **internal:** codegen related update ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
+
+
+### Documentation
+
+* add workers_secret migration guidance with tf-migrate support ([524b26a](https://github.com/cloudflare/terraform-provider-cloudflare/commit/524b26a608))
+* fix account_subscription examples ([2ebc7db](https://github.com/cloudflare/terraform-provider-cloudflare/commit/2ebc7db73b))
+* **migration-guide:** add table of contents to v5 migration guide ([e11e8a4](https://github.com/cloudflare/terraform-provider-cloudflare/commit/e11e8a41b5))
+* regenerate provider documentation ([4656c9f](https://github.com/cloudflare/terraform-provider-cloudflare/commit/4656c9f412))
+* resolve AI review doc warnings ([691131e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/691131e7e1))
+
+
 ## 5.22.0 (2026-07-09)
 
 Full Changelog: [v5.21.1...v5.22.0](https://github.com/cloudflare/terraform-provider-cloudflare/compare/v5.21.1...v5.22.0)

@@ -6,13 +6,12 @@ import (
 	"context"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
@@ -102,19 +101,55 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 			},
+			"global_acceleration": schema.SingleNestedAttribute{
+				Description: "Global Acceleration settings for China. When configured, WARP clients connect to the Global Accelerator addresses instead of the default ones. Please contact your account representative to enable this feature on your account. See https://developers.cloudflare.com/china-network/concepts/global-acceleration/.",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"api_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the API endpoints.",
+						Required:    true,
+						ElementType: types.StringType,
+					},
+					"enabled": schema.BoolAttribute{
+						Description: `Global acceleration settings are used only when "enabled".`,
+						Required:    true,
+					},
+					"masque_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the MASQUE tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
+						Required:    true,
+						ElementType: types.StringType,
+					},
+					"wireguard_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the WireGuard tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
+						Required:    true,
+						ElementType: types.StringType,
+					},
+				},
+			},
 			"service_mode_v2": schema.SingleNestedAttribute{
 				Computed:      true,
 				Optional:      true,
 				CustomType:    customfield.NewNestedObjectType[ZeroTrustDeviceDefaultProfileServiceModeV2Model](ctx),
 				PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 				Attributes: map[string]schema.Attribute{
-					"mode": schema.StringAttribute{
-						Description: "The mode to run the WARP client under.",
-						Optional:    true,
+					"api_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the API endpoints.",
+						Required:    true,
+						ElementType: types.StringType,
 					},
-					"port": schema.Float64Attribute{
-						Description: "The port number when used with proxy mode.",
-						Optional:    true,
+					"enabled": schema.BoolAttribute{
+						Description: `Global acceleration settings are used only when "enabled".`,
+						Required:    true,
+					},
+					"masque_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the MASQUE tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
+						Required:    true,
+						ElementType: types.StringType,
+					},
+					"wireguard_endpoints": schema.ListAttribute{
+						Description: "IP:port entries for the WireGuard tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
+						Required:    true,
+						ElementType: types.StringType,
 					},
 				},
 			},
@@ -225,9 +260,8 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"default": schema.BoolAttribute{
-				Description:   "Whether the policy will be applied to matching devices.",
-				Computed:      true,
-				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+				Description: "Whether the policy will be applied to matching devices.",
+				Computed:    true,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Whether the policy will be applied to matching devices.",
@@ -235,16 +269,14 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(true),
 			},
 			"gateway_unique_id": schema.StringAttribute{
-				Computed:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Computed: true,
 			},
 			"policy_id": schema.StringAttribute{
 				Computed: true,
 			},
 			"fallback_domains": schema.ListNestedAttribute{
-				Computed:      true,
-				PlanModifiers: []planmodifier.List{listplanmodifier.UseStateForUnknown()},
-				CustomType:    customfield.NewNestedObjectListType[ZeroTrustDeviceDefaultProfileFallbackDomainsModel](ctx),
+				Computed:   true,
+				CustomType: customfield.NewNestedObjectListType[ZeroTrustDeviceDefaultProfileFallbackDomainsModel](ctx),
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"suffix": schema.StringAttribute{

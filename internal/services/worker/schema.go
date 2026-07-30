@@ -5,8 +5,6 @@ package worker
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -16,11 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -106,7 +105,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Optional:    true,
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
-								Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+								PlanModifiers: []planmodifier.List{
+									listplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"enabled": schema.BoolAttribute{
 								Description: "Whether logs are enabled for the Worker.",
@@ -152,7 +153,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Optional:    true,
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
-								Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+								PlanModifiers: []planmodifier.List{
+									listplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"enabled": schema.BoolAttribute{
 								Description: "Whether traces are enabled for the Worker.",
@@ -179,16 +182,15 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Validators: []validator.String{
 									stringvalidator.OneOfCaseInsensitive("authenticated", "accept"),
 								},
-								PlanModifiers: []planmodifier.String{
-									PropagationPolicyDefault(),
-								},
+								Default: stringdefault.StaticString("authenticated"),
 							},
 						},
 						Default: objectdefault.StaticValue(customfield.NewObjectMust(ctx, &WorkerObservabilityTracesModel{
-							Enabled:          types.BoolValue(false),
-							HeadSamplingRate: types.Float64Value(1),
-							Persist:          types.BoolValue(true),
-							Destinations:     customfield.NewListMust[types.String](ctx, nil),
+							Enabled:           types.BoolValue(false),
+							HeadSamplingRate:  types.Float64Value(1),
+							Persist:           types.BoolValue(true),
+							Destinations:      customfield.NewListMust[types.String](ctx, nil),
+							PropagationPolicy: types.StringValue("authenticated"),
 						}).ObjectValue),
 					},
 				},
@@ -203,10 +205,11 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						Destinations:     customfield.NewListMust[types.String](ctx, nil),
 					}),
 					Traces: customfield.NewObjectMust(ctx, &WorkerObservabilityTracesModel{
-						Enabled:          types.BoolValue(false),
-						HeadSamplingRate: types.Float64Value(1),
-						Persist:          types.BoolValue(true),
-						Destinations:     customfield.NewListMust[types.String](ctx, nil),
+						Enabled:           types.BoolValue(false),
+						HeadSamplingRate:  types.Float64Value(1),
+						Persist:           types.BoolValue(true),
+						Destinations:      customfield.NewListMust[types.String](ctx, nil),
+						PropagationPolicy: types.StringValue("authenticated"),
 					}),
 				}).ObjectValue),
 			},

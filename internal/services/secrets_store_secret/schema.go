@@ -34,31 +34,29 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseNonNullStateForUnknown()},
 			},
 			"account_id": schema.StringAttribute{
-				Description:   "Account Identifier",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"store_id": schema.StringAttribute{
-				Description:   "Store Identifier",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"comment": schema.StringAttribute{
-				Description: "Freeform text describing the secret",
+				Description: "Freeform text describing the secret.",
 				Optional:    true,
 			},
 			"value": schema.StringAttribute{
 				Description: "The value of the secret. Maximum 64 KiB (65,536 bytes). Note that this is 'write only' - no API response will provide this value, it is only used to create/modify secrets.",
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 			},
 			"scopes": schema.ListAttribute{
-				Description: "The list of services that can use this secret. Valid values are `workers`, `ai_gateway`, `dex`, and `access`. Must be listed in alphabetical order.",
-				Required:    true,
+				Description: "The list of services that can use this secret.",
+				Optional:    true,
 				ElementType: types.StringType,
 			},
 			"created": schema.StringAttribute{
-				Description: "Whenthe secret was created.",
+				Description: "When the secret was created.",
 				Computed:    true,
 				CustomType:  timetypes.RFC3339Type{},
 			},
@@ -68,9 +66,8 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				CustomType:  timetypes.RFC3339Type{},
 			},
 			"name": schema.StringAttribute{
-				Description:   "The name of the secret",
-				Required:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Description: "The name of the secret",
+				Computed:    true,
 			},
 			"status": schema.StringAttribute{
 				Description: `Available values: "pending", "active", "deleted".`,

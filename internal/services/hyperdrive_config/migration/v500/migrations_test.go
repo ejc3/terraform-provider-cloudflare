@@ -188,6 +188,9 @@ func TestMigrateHyperdriveConfig_V5Idempotent(t *testing.T) {
 // hyperdriveEnv loads and validates Hyperdrive database env vars.
 func hyperdriveEnv(t *testing.T) (host, name, port, user, password string) {
 	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("acceptance tests skipped unless TF_ACC is set")
+	}
 	acctest.TestAccPreCheck_Hyperdrive(t)
 	return os.Getenv("CLOUDFLARE_HYPERDRIVE_DATABASE_HOSTNAME"),
 		os.Getenv("CLOUDFLARE_HYPERDRIVE_DATABASE_NAME"),

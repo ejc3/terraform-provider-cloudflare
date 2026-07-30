@@ -20,7 +20,7 @@ type ZeroTrustDEXTestResultDataSourceEnvelope struct {
 type ZeroTrustDEXTestDataSourceModel struct {
 	ID             types.String                                                                `tfsdk:"id" path:"dex_test_id,computed"`
 	DEXTestID      types.String                                                                `tfsdk:"dex_test_id" path:"dex_test_id,optional"`
-	AccountID      types.String                                                                `tfsdk:"account_id" path:"account_id,required"`
+	AccountID      types.String                                                                `tfsdk:"account_id" path:"account_id,optional"`
 	Created        timetypes.RFC3339                                                           `tfsdk:"created" json:"created,computed" format:"date-time"`
 	Description    types.String                                                                `tfsdk:"description" json:"description,computed"`
 	Enabled        types.Bool                                                                  `tfsdk:"enabled" json:"enabled,computed"`

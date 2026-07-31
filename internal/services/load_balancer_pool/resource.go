@@ -31,6 +31,18 @@ type LoadBalancerPoolResource struct {
 	client *cloudflare.Client
 }
 
+func preserveCreatedOnFromState(data *LoadBalancerPoolModel, state *LoadBalancerPoolModel) {
+	if data == nil || state == nil {
+		return
+	}
+
+	if data.CreatedOn.IsUnknown() || data.CreatedOn.IsNull() || data.CreatedOn.ValueString() == "0001-01-01T00:00:00Z" {
+		if !state.CreatedOn.IsUnknown() && !state.CreatedOn.IsNull() {
+			data.CreatedOn = state.CreatedOn
+		}
+	}
+}
+
 func (r *LoadBalancerPoolResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_load_balancer_pool"
 }
@@ -139,6 +151,7 @@ func (r *LoadBalancerPoolResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 	data = &env.Result
+	preserveCreatedOnFromState(data, state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -153,6 +166,7 @@ func (r *LoadBalancerPoolResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	res := new(http.Response)
+	stateData := data
 	env := LoadBalancerPoolResultEnvelope{*data}
 	_, err := r.client.LoadBalancers.Pools.Get(
 		ctx,
@@ -179,6 +193,7 @@ func (r *LoadBalancerPoolResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 	data = &env.Result
+	preserveCreatedOnFromState(data, stateData)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

@@ -1048,6 +1048,7 @@ func (p *CloudflareProvider) DataSources(ctx context.Context) []func() datasourc
 		snippet.NewSnippetDataSource,
 		snippet.NewSnippetsDataSource,
 		snippet_rules.NewSnippetRulesDataSource,
+		snippet_rules.NewSnippetRulesListDataSource,
 		snippets.NewSnippetsDataSource,     // deprecated.
 		snippets.NewSnippetsListDataSource, // deprecated.
 		calls_sfu_app.NewCallsSFUAppDataSource,

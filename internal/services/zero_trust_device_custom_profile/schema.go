@@ -155,24 +155,15 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				CustomType:    customfield.NewNestedObjectType[ZeroTrustDeviceCustomProfileServiceModeV2Model](ctx),
 				PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 				Attributes: map[string]schema.Attribute{
-					"api_endpoints": schema.ListAttribute{
-						Description: "IP:port entries for the API endpoints.",
-						Required:    true,
-						ElementType: types.StringType,
+					"mode": schema.StringAttribute{
+						Description: "The mode to run the WARP client under.",
+						Optional:    true,
+						Computed:    true,
 					},
-					"enabled": schema.BoolAttribute{
-						Description: `Global acceleration settings are used only when "enabled".`,
-						Required:    true,
-					},
-					"masque_endpoints": schema.ListAttribute{
-						Description: "IP:port entries for the MASQUE tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
-						Required:    true,
-						ElementType: types.StringType,
-					},
-					"wireguard_endpoints": schema.ListAttribute{
-						Description: "IP:port entries for the WireGuard tunnel endpoints. Either wireguard_endpoints or masque_endpoints must be provided.",
-						Required:    true,
-						ElementType: types.StringType,
+					"port": schema.Float64Attribute{
+						Description: "The port number when used with proxy mode.",
+						Optional:    true,
+						Computed:    true,
 					},
 				},
 			},

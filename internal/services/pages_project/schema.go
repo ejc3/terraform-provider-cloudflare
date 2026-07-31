@@ -54,6 +54,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 			"build_config": schema.SingleNestedAttribute{
 				Description: "Configs for the project build process.",
 				Optional:    true,
+				CustomType:  customfield.NewNestedObjectType[PagesProjectBuildConfigModel](ctx),
 				Attributes: map[string]schema.Attribute{
 					"build_caching": schema.BoolAttribute{
 						Description: "Enable build caching for the project.",
@@ -105,11 +106,13 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							"path_excludes": schema.ListAttribute{
 								Description: "A list of paths that should be excluded from triggering a preview deployment. Wildcard syntax (`*`) is supported.",
 								Optional:    true,
+								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
 							"path_includes": schema.ListAttribute{
 								Description: "A list of paths that should be watched to trigger a preview deployment. Wildcard syntax (`*`) is supported.",
 								Optional:    true,
+								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
 							"pr_comments_enabled": schema.BoolAttribute{
@@ -119,11 +122,13 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							"preview_branch_excludes": schema.ListAttribute{
 								Description: "A list of branches that should not trigger a preview deployment. Wildcard syntax (`*`) is supported. Must be used with `preview_deployment_setting` set to `custom`.",
 								Optional:    true,
+								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
 							"preview_branch_includes": schema.ListAttribute{
 								Description: "A list of branches that should trigger a preview deployment. Wildcard syntax (`*`) is supported. Must be used with `preview_deployment_setting` set to `custom`.",
 								Optional:    true,
+								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
 							"preview_deployment_setting": schema.StringAttribute{

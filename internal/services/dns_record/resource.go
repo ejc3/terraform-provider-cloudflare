@@ -91,6 +91,10 @@ func (r *DNSRecordResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 	data = &env.Result
+	normalizeSettings(ctx, data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -140,6 +144,10 @@ func (r *DNSRecordResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	data = &env.Result
+	normalizeSettings(ctx, data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -180,6 +188,10 @@ func (r *DNSRecordResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	data = &env.Result
+	normalizeSettings(ctx, data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -250,8 +262,10 @@ func (r *DNSRecordResource) ImportState(ctx context.Context, req resource.Import
 		return
 	}
 	data = &env.Result
+	normalizeSettings(ctx, data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
-
-

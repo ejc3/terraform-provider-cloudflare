@@ -19,16 +19,13 @@ The following provider-level configuration attributes have been renamed or remov
 * **cloudflare_zero_trust_dlp_custom_prompt_topics:** add list data source for DLP custom prompt topics ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
 
 
-### New Resources
-
-* **cloudflare_oauth_client:** add OAuth client resource ([47aa31e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/47aa31edc9))
-
-
 ### Features
 
-* **argo:** add comprehensive acceptance tests ([769a23f](https://github.com/cloudflare/terraform-provider-cloudflare/commit/769a23f204))
 * bump Go SDK version to v7.8.0 ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
 * **hyperdrive_config:** add v4 to v5 state migration ([cdd5ca6](https://github.com/cloudflare/terraform-provider-cloudflare/commit/cdd5ca697d))
+* **turnstile_widget:** add `deployed_via` and `last_modified_via` computed fields, and default `offlabel` to `false` ([5952e95](https://github.com/cloudflare/terraform-provider-cloudflare/commit/5952e9599f))
+* **zero_trust_device_default_profile:** add `global_acceleration` block for configuring custom tunnel and API endpoints ([5952e95](https://github.com/cloudflare/terraform-provider-cloudflare/commit/5952e9599f))
+* **zero_trust_gateway_policy:** add `delete_headers` support in request header modification settings ([5952e95](https://github.com/cloudflare/terraform-provider-cloudflare/commit/5952e9599f))
 
 
 ### Bug Fixes
@@ -39,7 +36,10 @@ The following provider-level configuration attributes have been renamed or remov
 * **zero_trust_access_policy:** resolve perpetual diff by calling normalization in CRUD ([497f06b](https://github.com/cloudflare/terraform-provider-cloudflare/commit/497f06bdbd))
 * **zero_trust_device_custom_profile:** resolve perpetual drift on default, include, target_tests, and exclude nested attributes ([f74cecf](https://github.com/cloudflare/terraform-provider-cloudflare/commit/f74cecf3ae))
 * **zero_trust_device_custom_profile:** address review feedback on normalization ([969b35d](https://github.com/cloudflare/terraform-provider-cloudflare/commit/969b35dbef))
+* **zero_trust_dex_test:** remove stale model fields that caused value conversion panics during resource operations ([fd43d83](https://github.com/cloudflare/terraform-provider-cloudflare/commit/fd43d83bfe))
 * **zero_trust_organization:** normalize mfa_required_for_all_apps to prevent perpetual diff ([001c28e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/001c28eab4))
+* **workers_custom_domain:** populate computed fields from a post-create read to prevent import drift ([fd43d83](https://github.com/cloudflare/terraform-provider-cloudflare/commit/fd43d83bfe))
+* **pages_project:** fix `source.config` drift for API-populated fields by preserving computed state values ([c63f15e](https://github.com/cloudflare/terraform-provider-cloudflare/commit/c63f15e1fa))
 
 
 ### Chores

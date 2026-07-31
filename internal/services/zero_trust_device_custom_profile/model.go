@@ -38,7 +38,7 @@ type ZeroTrustDeviceCustomProfileModel struct {
 	TunnelProtocol             types.String                                                                     `tfsdk:"tunnel_protocol" json:"tunnel_protocol,computed_optional"`
 	DNSSearchSuffixes          customfield.NestedObjectList[ZeroTrustDeviceCustomProfileDNSSearchSuffixesModel] `tfsdk:"dns_search_suffixes" json:"dns_search_suffixes,computed_optional"`
 	Exclude                    customfield.NestedObjectList[ZeroTrustDeviceCustomProfileExcludeModel]           `tfsdk:"exclude" json:"exclude,computed_optional"`
-	GlobalAcceleration         *ZeroTrustDeviceCustomProfileGlobalAccelerationModel                              `tfsdk:"global_acceleration" json:"global_acceleration,optional"`
+	GlobalAcceleration         *ZeroTrustDeviceCustomProfileGlobalAccelerationModel                             `tfsdk:"global_acceleration" json:"global_acceleration,optional"`
 	Include                    customfield.NestedObjectList[ZeroTrustDeviceCustomProfileIncludeModel]           `tfsdk:"include" json:"include,computed_optional"`
 	ServiceModeV2              customfield.NestedObject[ZeroTrustDeviceCustomProfileServiceModeV2Model]         `tfsdk:"service_mode_v2" json:"service_mode_v2,computed_optional"`
 	Default                    types.Bool                                                                       `tfsdk:"default" json:"default,computed"`
@@ -78,12 +78,8 @@ type ZeroTrustDeviceCustomProfileIncludeModel struct {
 }
 
 type ZeroTrustDeviceCustomProfileServiceModeV2Model struct {
-	APIEndpoints       customfield.List[types.String] `tfsdk:"api_endpoints" json:"api_endpoints,required"`
-	Enabled            types.Bool                     `tfsdk:"enabled" json:"enabled,required"`
-	MasqueEndpoints    customfield.List[types.String] `tfsdk:"masque_endpoints" json:"masque_endpoints,required"`
-	Mode               types.String                   `tfsdk:"mode" json:"mode,computed_optional"`
-	Port               types.Float64                  `tfsdk:"port" json:"port,computed_optional"`
-	WireguardEndpoints customfield.List[types.String] `tfsdk:"wireguard_endpoints" json:"wireguard_endpoints,required"`
+	Mode types.String  `tfsdk:"mode" json:"mode,computed_optional"`
+	Port types.Float64 `tfsdk:"port" json:"port,computed_optional"`
 }
 
 type ZeroTrustDeviceCustomProfileGlobalAccelerationModel struct {

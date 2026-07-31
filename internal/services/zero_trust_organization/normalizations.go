@@ -20,6 +20,14 @@ func normalizeFalseAndNullBool(data *basetypes.BoolValue, stateData basetypes.Bo
 	if data.ValueBool() || stateData.ValueBool() {
 		return
 	}
+
+	if stateData.IsUnknown() {
+		if data.IsNull() || data.IsUnknown() {
+			*data = types.BoolValue(false)
+		}
+		return
+	}
+
 	*data = stateData
 }
 
@@ -69,6 +77,10 @@ func normalizeImportZeroTrustOrganizationAPIData(_ context.Context, data *ZeroTr
 		data.AutoRedirectToIdentity = types.BoolValue(false)
 	}
 
+	if data.MfaRequiredForAllApps.IsNull() {
+		data.MfaRequiredForAllApps = types.BoolValue(false)
+	}
+
 	// Set LoginDesign to nil if all fields are empty/null
 	if data.LoginDesign != nil {
 		allEmpty := true
@@ -87,7 +99,7 @@ func normalizeImportZeroTrustOrganizationAPIData(_ context.Context, data *ZeroTr
 		if !data.LoginDesign.TextColor.IsNull() && data.LoginDesign.TextColor.ValueString() != "" {
 			allEmpty = false
 		}
-		
+
 		if allEmpty {
 			data.LoginDesign = nil
 		}

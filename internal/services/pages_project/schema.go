@@ -104,6 +104,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"owner_id": schema.StringAttribute{
 								Description: "The owner ID of the repository.",
+								Computed:    true,
 								Optional:    true,
 							},
 							"path_excludes": schema.ListAttribute{
@@ -114,6 +115,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"path_includes": schema.ListAttribute{
 								Description: "A list of paths that should be watched to trigger a preview deployment. Wildcard syntax (`*`) is supported.",
+								Computed:    true,
 								Optional:    true,
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
@@ -155,6 +157,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"repo_id": schema.StringAttribute{
 								Description: "The ID of the repository.",
+								Computed:    true,
 								Optional:    true,
 							},
 							"repo_name": schema.StringAttribute{

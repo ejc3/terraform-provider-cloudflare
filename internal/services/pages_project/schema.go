@@ -95,7 +95,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 						Attributes: map[string]schema.Attribute{
 							"deployments_enabled": schema.BoolAttribute{
 								Description:        "Whether to enable automatic deployments when pushing to the source repository.\nWhen disabled, no deployments (production or preview) will be triggered automatically.",
+								Computed:           true,
 								Optional:           true,
+								PlanModifiers:      []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 								DeprecationMessage: "Use `production_deployments_enabled` and `preview_deployment_setting` for more granular control.",
 							},
 							"owner": schema.StringAttribute{
@@ -106,6 +108,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Description: "The owner ID of the repository.",
 								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"path_excludes": schema.ListAttribute{
 								Description: "A list of paths that should be excluded from triggering a preview deployment. Wildcard syntax (`*`) is supported.",
@@ -117,12 +122,19 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Description: "A list of paths that should be watched to trigger a preview deployment. Wildcard syntax (`*`) is supported.",
 								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.List{
+									listplanmodifier.UseStateForUnknown(),
+								},
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
 							"pr_comments_enabled": schema.BoolAttribute{
 								Description: "Whether to enable PR comments.",
+								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.Bool{
+									boolplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"preview_branch_excludes": schema.ListAttribute{
 								Description: "A list of branches that should not trigger a preview deployment. Wildcard syntax (`*`) is supported. Must be used with `preview_deployment_setting` set to `custom`.",
@@ -132,7 +144,11 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"preview_branch_includes": schema.ListAttribute{
 								Description: "A list of branches that should trigger a preview deployment. Wildcard syntax (`*`) is supported. Must be used with `preview_deployment_setting` set to `custom`.",
+								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.List{
+									listplanmodifier.UseStateForUnknown(),
+								},
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
 							},
@@ -153,12 +169,19 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"production_deployments_enabled": schema.BoolAttribute{
 								Description: "Whether to trigger a production deployment on commits to the production branch.",
+								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.Bool{
+									boolplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"repo_id": schema.StringAttribute{
 								Description: "The ID of the repository.",
 								Computed:    true,
 								Optional:    true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 							"repo_name": schema.StringAttribute{
 								Description: "The name of the repository.",

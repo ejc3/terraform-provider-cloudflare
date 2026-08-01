@@ -222,7 +222,7 @@ func TestMigrateCloudflarePageRule_CacheKeyFields(t *testing.T) {
 							acctest.WriteOutConfig(t, testConfig, tmpDir)
 
 							// Run migration
-							acctest.RunMigrationCommand(t, testConfig, tmpDir)
+							acctest.RunMigrationV2Command(t, testConfig, tmpDir, "v4", "v5")
 						},
 						ProtoV6ProviderFactories: acctest.TestAccProtoV6ProviderFactories,
 						ConfigDirectory:          config.StaticDirectory(tmpDir),

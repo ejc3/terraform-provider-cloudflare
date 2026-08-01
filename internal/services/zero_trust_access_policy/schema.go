@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/customvalidator"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -171,6 +172,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  customfield.NewNestedObjectSetType[ZeroTrustAccessPolicyExcludeModel](ctx),
 				NestedObject: schema.NestedAttributeObject{
+					Validators: []validator.Object{
+						customvalidator.ObjectSizeAtMost(1),
+					},
 					Attributes: map[string]schema.Attribute{
 						"group": schema.SingleNestedAttribute{
 							Optional: true,
@@ -461,6 +465,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  customfield.NewNestedObjectSetType[ZeroTrustAccessPolicyIncludeModel](ctx),
 				NestedObject: schema.NestedAttributeObject{
+					Validators: []validator.Object{
+						customvalidator.ObjectSizeAtMost(1),
+					},
 					Attributes: map[string]schema.Attribute{
 						"group": schema.SingleNestedAttribute{
 							Optional: true,
@@ -751,6 +758,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional:    true,
 				CustomType:  customfield.NewNestedObjectSetType[ZeroTrustAccessPolicyRequireModel](ctx),
 				NestedObject: schema.NestedAttributeObject{
+					Validators: []validator.Object{
+						customvalidator.ObjectSizeAtMost(1),
+					},
 					Attributes: map[string]schema.Attribute{
 						"group": schema.SingleNestedAttribute{
 							Optional: true,

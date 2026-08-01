@@ -27,13 +27,16 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Store Identifier",
+				Computed:    true,
 			},
 			"store_id": schema.StringAttribute{
-				Optional: true,
+				Description: "Store Identifier",
+				Optional:    true,
 			},
 			"account_id": schema.StringAttribute{
-				Required: true,
+				Description: "Account Identifier",
+				Required:    true,
 			},
 			"created": schema.StringAttribute{
 				Description: "When the secret was created.",

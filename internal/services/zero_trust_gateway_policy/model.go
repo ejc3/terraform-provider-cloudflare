@@ -19,7 +19,7 @@ type ZeroTrustGatewayPolicyModel struct {
 	Action        types.String                                                      `tfsdk:"action" json:"action,required"`
 	Name          types.String                                                      `tfsdk:"name" json:"name,required"`
 	Description   types.String                                                      `tfsdk:"description" json:"description,optional"`
-	Filters       customfield.List[types.String]                                    `tfsdk:"filters" json:"filters,optional"`
+	Filters       customfield.List[types.String]                                    `tfsdk:"filters" json:"filters,computed_optional"`
 	DevicePosture types.String                                                      `tfsdk:"device_posture" json:"device_posture,computed_optional"`
 	Enabled       types.Bool                                                        `tfsdk:"enabled" json:"enabled,computed_optional"`
 	Identity      types.String                                                      `tfsdk:"identity" json:"identity,computed_optional"`
@@ -66,7 +66,7 @@ type ZeroTrustGatewayPolicyRuleSettingsModel struct {
 	DNSResolvers                    *ZeroTrustGatewayPolicyRuleSettingsDNSResolversModel         `tfsdk:"dns_resolvers" json:"dns_resolvers,optional"`
 	Egress                          *ZeroTrustGatewayPolicyRuleSettingsEgressModel               `tfsdk:"egress" json:"egress,optional"`
 	ForensicCopy                    *ZeroTrustGatewayPolicyRuleSettingsForensicCopyModel         `tfsdk:"forensic_copy" json:"forensic_copy,optional"`
-	IgnoreCNAMECategoryMatches      types.Bool                                                   `tfsdk:"ignore_cname_category_matches" json:"ignore_cname_category_matches,optional"`
+	IgnoreCNAMECategoryMatches      types.Bool                                                   `tfsdk:"ignore_cname_category_matches" json:"ignore_cname_category_matches,computed_optional"`
 	InsecureDisableDNSSECValidation types.Bool                                                   `tfsdk:"insecure_disable_dnssec_validation" json:"insecure_disable_dnssec_validation,optional"`
 	IPCategories                    types.Bool                                                   `tfsdk:"ip_categories" json:"ip_categories,optional"`
 	IPIndicatorFeeds                types.Bool                                                   `tfsdk:"ip_indicator_feeds" json:"ip_indicator_feeds,optional"`

@@ -30,16 +30,20 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Secret identifier tag.",
+				Computed:    true,
 			},
 			"secret_id": schema.StringAttribute{
-				Optional: true,
+				Description: "Secret identifier tag.",
+				Optional:    true,
 			},
 			"account_id": schema.StringAttribute{
-				Required: true,
+				Description: "Account Identifier",
+				Required:    true,
 			},
 			"store_id": schema.StringAttribute{
-				Required: true,
+				Description: "Store Identifier",
+				Required:    true,
 			},
 			"comment": schema.StringAttribute{
 				Description: "Freeform text describing the secret.",

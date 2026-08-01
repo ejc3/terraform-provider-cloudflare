@@ -54,24 +54,26 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 							Description: "Identifier of the resource group.",
 							Computed:    true,
 						},
-						"scope": schema.SingleNestedAttribute{
-							Description: "A scope is a combination of scope objects which provides additional context.",
+						"scope": schema.ListNestedAttribute{
+							Description: "The scope associated to the resource group",
 							Computed:    true,
-							CustomType:  customfield.NewNestedObjectType[ResourceGroupsScopeDataSourceModel](ctx),
-							Attributes: map[string]schema.Attribute{
-								"key": schema.StringAttribute{
-									Description: "This is a combination of pre-defined resource name and identifier (like Account ID etc.)",
-									Computed:    true,
-								},
-								"objects": schema.ListNestedAttribute{
-									Description: "A list of scope objects for additional context.",
-									Computed:    true,
-									CustomType:  customfield.NewNestedObjectListType[ResourceGroupsScopeObjectsDataSourceModel](ctx),
-									NestedObject: schema.NestedAttributeObject{
-										Attributes: map[string]schema.Attribute{
-											"key": schema.StringAttribute{
-												Description: "This is a combination of pre-defined resource name and identifier (like Zone ID etc.)",
-												Computed:    true,
+							CustomType:  customfield.NewNestedObjectListType[ResourceGroupsScopeDataSourceModel](ctx),
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"key": schema.StringAttribute{
+										Description: "This is a combination of pre-defined resource name and identifier (like Account ID etc.)",
+										Computed:    true,
+									},
+									"objects": schema.ListNestedAttribute{
+										Description: "A list of scope objects for additional context.",
+										Computed:    true,
+										CustomType:  customfield.NewNestedObjectListType[ResourceGroupsScopeObjectsDataSourceModel](ctx),
+										NestedObject: schema.NestedAttributeObject{
+											Attributes: map[string]schema.Attribute{
+												"key": schema.StringAttribute{
+													Description: "This is a combination of pre-defined resource name and identifier (like Zone ID etc.)",
+													Computed:    true,
+												},
 											},
 										},
 									},

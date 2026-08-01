@@ -4,10 +4,14 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/option"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/consts"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/customvalidator"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/access_rule"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/account"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/account_api_token_permission_groups"
@@ -288,10 +292,13 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/zone_setting"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/zone_subscription"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -307,11 +314,12 @@ type CloudflareProvider struct {
 
 // CloudflareProviderModel describes the provider data model.
 type CloudflareProviderModel struct {
-	BaseURL        types.String `tfsdk:"base_url" json:"base_url,optional"`
-	APIToken       types.String `tfsdk:"api_token" json:"api_token,optional"`
-	APIKey         types.String `tfsdk:"api_key" json:"api_key,optional"`
-	APIEmail       types.String `tfsdk:"api_email" json:"api_email,optional"`
-	UserServiceKey types.String `tfsdk:"user_service_key" json:"user_service_key,optional"`
+	APIKey                  types.String `tfsdk:"api_key" json:"api_key"`
+	APIUserServiceKey       types.String `tfsdk:"api_user_service_key" json:"api_user_service_key"`
+	Email                   types.String `tfsdk:"email" json:"email"`
+	APIToken                types.String `tfsdk:"api_token" json:"api_token"`
+	UserAgentOperatorSuffix types.String `tfsdk:"user_agent_operator_suffix" json:"user_agent_operator_suffix"`
+	BaseURL                 types.String `tfsdk:"base_url" json:"base_url"`
 }
 
 func (p *CloudflareProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -322,21 +330,53 @@ func (p *CloudflareProvider) Metadata(ctx context.Context, req provider.Metadata
 func ProviderSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"base_url": schema.StringAttribute{
-				Description: "Set the base url that the provider connects to.",
-				Optional:    true,
+			consts.EmailSchemaKey: schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("A registered Cloudflare email address. Alternatively, can be configured using the `%s` environment variable. Required when using `api_key`. Conflicts with `api_token`.", consts.EmailEnvVarKey),
+				Validators:          []validator.String{},
 			},
-			"api_token": schema.StringAttribute{
-				Optional: true,
+
+			consts.APIKeySchemaKey: schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: fmt.Sprintf("The API key for operations. Alternatively, can be configured using the `%s` environment variable. API keys are [now considered legacy by Cloudflare](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations), API tokens should be used instead. Must provide only one of `api_key`, `api_token`, `api_user_service_key`.", consts.APIKeyEnvVarKey),
+				Validators: []validator.String{
+					customvalidator.NewSensitiveRegexMatchesValidator(
+						regexp.MustCompile(`^[0-9A-Za-z\-_]{37,60}$`),
+						"API key must only contain characters 0-9, a-z, A-Z, hyphens and underscores",
+					),
+					stringvalidator.AlsoRequires(path.Expressions{
+						path.MatchRoot(consts.EmailSchemaKey),
+					}...),
+				},
 			},
-			"api_key": schema.StringAttribute{
-				Optional: true,
+
+			consts.APITokenSchemaKey: schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: fmt.Sprintf("The API Token for operations. Alternatively, can be configured using the `%s` environment variable. Must provide only one of `api_key`, `api_token`, `api_user_service_key`.", consts.APITokenEnvVarKey),
+				Validators: []validator.String{
+					customvalidator.NewSensitiveRegexMatchesValidator(
+						regexp.MustCompile(`^[0-9A-Za-z\-_]{40,80}$`),
+						"API tokens must only contain characters a-z, A-Z, 0-9, hyphens and underscores",
+					),
+				},
 			},
-			"api_email": schema.StringAttribute{
-				Optional: true,
+
+			consts.APIUserServiceKeySchemaKey: schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: fmt.Sprintf("A special Cloudflare API key good for a restricted set of endpoints. Alternatively, can be configured using the `%s` environment variable. Must provide only one of `api_key`, `api_token`, `api_user_service_key`.", consts.APIUserServiceKeyEnvVarKey),
 			},
-			"user_service_key": schema.StringAttribute{
-				Optional: true,
+
+			consts.UserAgentOperatorSuffixSchemaKey: schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("A value to append to the HTTP User Agent for all API calls. This value is not something most users need to modify however, if you are using a non-standard provider or operator configuration, this is recommended to assist in uniquely identifying your traffic. **Setting this value will remove the Terraform version from the HTTP User Agent string and may have unintended consequences**. Alternatively, can be configured using the `%s` environment variable.", consts.UserAgentOperatorSuffixEnvVarKey),
+			},
+
+			consts.BaseURLSchemaKey: schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: fmt.Sprintf("Value to override the default HTTP client base URL. Alternatively, can be configured using the `%s` environment variable.", consts.BaseURLSchemaKey),
 			},
 		},
 	}
@@ -372,19 +412,19 @@ func (p *CloudflareProvider) Configure(ctx context.Context, req provider.Configu
 		opts = append(opts, option.WithAPIKey(o))
 	}
 
-	if !data.APIEmail.IsNull() && !data.APIEmail.IsUnknown() {
-		opts = append(opts, option.WithAPIEmail(data.APIEmail.ValueString()))
+	if !data.Email.IsNull() && !data.Email.IsUnknown() {
+		opts = append(opts, option.WithAPIEmail(data.Email.ValueString()))
 	} else if o, ok := os.LookupEnv("CLOUDFLARE_EMAIL"); ok {
 		opts = append(opts, option.WithAPIEmail(o))
 	}
 
-	if !data.UserServiceKey.IsNull() && !data.UserServiceKey.IsUnknown() {
-		opts = append(opts, option.WithUserServiceKey(data.UserServiceKey.ValueString()))
+	if !data.APIUserServiceKey.IsNull() && !data.APIUserServiceKey.IsUnknown() {
+		opts = append(opts, option.WithUserServiceKey(data.APIUserServiceKey.ValueString()))
 	} else if o, ok := os.LookupEnv("CLOUDFLARE_API_USER_SERVICE_KEY"); ok {
 		opts = append(opts, option.WithUserServiceKey(o))
 	}
 
-	var pluginVersion *string
+	pluginVersion := utils.FindGoModuleVersion("github.com/hashicorp/terraform-plugin-framework")
 	framework := "terraform-plugin-framework"
 	userAgentParams := utils.UserAgentBuilderParams{
 		ProviderVersion: &p.version,
@@ -392,7 +432,12 @@ func (p *CloudflareProvider) Configure(ctx context.Context, req provider.Configu
 		PluginVersion:   pluginVersion,
 	}
 
-	userAgentParams.TerraformVersion = &req.TerraformVersion
+	if !data.UserAgentOperatorSuffix.IsNull() {
+		operatorSuffix := data.UserAgentOperatorSuffix.String()
+		userAgentParams.OperatorSuffix = &operatorSuffix
+	} else {
+		userAgentParams.TerraformVersion = &req.TerraformVersion
+	}
 
 	opts = append(opts, option.WithHeader("user-agent", userAgentParams.String()))
 	opts = append(opts, option.WithHeader("x-stainless-package-version", p.version))

@@ -27,7 +27,8 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 		}.String(),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
-				Required: true,
+				Description: "Account Identifier.",
+				Required:    true,
 			},
 			"direction": schema.StringAttribute{
 				Description: "Direction to sort objects.\nAvailable values: \"asc\", \"desc\".",

@@ -71,10 +71,10 @@ type AccountMembersPoliciesPermissionGroupsMetaDataSourceModel struct {
 }
 
 type AccountMembersPoliciesResourceGroupsDataSourceModel struct {
-	ID    types.String                                                                       `tfsdk:"id" json:"id,computed"`
-	Scope customfield.NestedObject[AccountMembersPoliciesResourceGroupsScopeDataSourceModel] `tfsdk:"scope" json:"scope,computed"`
-	Meta  customfield.NestedObject[AccountMembersPoliciesResourceGroupsMetaDataSourceModel]  `tfsdk:"meta" json:"meta,computed"`
-	Name  types.String                                                                       `tfsdk:"name" json:"name,computed"`
+	ID    types.String                                                                           `tfsdk:"id" json:"id,computed"`
+	Scope customfield.NestedObjectList[AccountMembersPoliciesResourceGroupsScopeDataSourceModel] `tfsdk:"scope" json:"scope,computed"`
+	Meta  customfield.NestedObject[AccountMembersPoliciesResourceGroupsMetaDataSourceModel]      `tfsdk:"meta" json:"meta,computed"`
+	Name  types.String                                                                           `tfsdk:"name" json:"name,computed"`
 }
 
 type AccountMembersPoliciesResourceGroupsScopeDataSourceModel struct {

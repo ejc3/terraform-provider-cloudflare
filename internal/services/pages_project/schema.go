@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,31 +55,38 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"build_config": schema.SingleNestedAttribute{
 				Description: "Configs for the project build process.",
+				Computed:    true,
 				Optional:    true,
 				CustomType:  customfield.NewNestedObjectType[PagesProjectBuildConfigModel](ctx),
 				Attributes: map[string]schema.Attribute{
 					"build_caching": schema.BoolAttribute{
 						Description: "Enable build caching for the project.",
+						Computed:    true,
 						Optional:    true,
 					},
 					"build_command": schema.StringAttribute{
 						Description: "Command used to build project.",
+						Computed:    true,
 						Optional:    true,
 					},
 					"destination_dir": schema.StringAttribute{
 						Description: "Output directory of the build.",
+						Computed:    true,
 						Optional:    true,
 					},
 					"root_dir": schema.StringAttribute{
 						Description: "Directory to run the command.",
+						Computed:    true,
 						Optional:    true,
 					},
 					"web_analytics_tag": schema.StringAttribute{
 						Description: "The classifying tag for analytics.",
+						Computed:    true,
 						Optional:    true,
 					},
 					"web_analytics_token": schema.StringAttribute{
 						Description: "The auth token for analytics.",
+						Computed:    true,
 						Optional:    true,
 						Sensitive:   true,
 					},
@@ -102,6 +108,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"owner": schema.StringAttribute{
 								Description: "The owner of the repository.",
+								Computed:    true,
 								Optional:    true,
 							},
 							"owner_id": schema.StringAttribute{
@@ -114,6 +121,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"path_excludes": schema.ListAttribute{
 								Description: "A list of paths that should be excluded from triggering a preview deployment. Wildcard syntax (`*`) is supported.",
+								Computed:    true,
 								Optional:    true,
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
@@ -138,6 +146,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"preview_branch_excludes": schema.ListAttribute{
 								Description: "A list of branches that should not trigger a preview deployment. Wildcard syntax (`*`) is supported. Must be used with `preview_deployment_setting` set to `custom`.",
+								Computed:    true,
 								Optional:    true,
 								CustomType:  customfield.NewListType[types.String](ctx),
 								ElementType: types.StringType,
@@ -154,6 +163,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"preview_deployment_setting": schema.StringAttribute{
 								Description: "Controls whether commits to preview branches trigger a preview deployment.\nAvailable values: \"all\", \"none\", \"custom\".",
+								Computed:    true,
 								Optional:    true,
 								Validators: []validator.String{
 									stringvalidator.OneOfCaseInsensitive(
@@ -165,6 +175,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"production_branch": schema.StringAttribute{
 								Description: "The production branch of the repository.",
+								Computed:    true,
 								Optional:    true,
 							},
 							"production_deployments_enabled": schema.BoolAttribute{
@@ -185,6 +196,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							},
 							"repo_name": schema.StringAttribute{
 								Description: "The name of the repository.",
+								Computed:    true,
 								Optional:    true,
 							},
 						},
@@ -374,7 +386,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Attributes: map[string]schema.Attribute{
 									"mode": schema.StringAttribute{
 										Description: "Placement mode.",
-										Required:    true,
+										Optional:    true,
 									},
 								},
 							},
@@ -421,6 +433,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 										},
 										"environment": schema.StringAttribute{
 											Description: "The Service environment.",
+											Computed:    true,
 											Optional:    true,
 										},
 									},
@@ -431,6 +444,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Computed:           true,
 								Optional:           true,
 								DeprecationMessage: "All new projects now use the Standard usage model.",
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 								Validators: []validator.String{
 									stringvalidator.OneOfCaseInsensitive(
 										"standard",
@@ -438,7 +454,6 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 										"unbound",
 									),
 								},
-								Default: stringdefault.StaticString("standard"),
 							},
 							"vectorize_bindings": schema.MapNestedAttribute{
 								Description: "Vectorize bindings used for Pages Functions.",
@@ -627,7 +642,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Attributes: map[string]schema.Attribute{
 									"mode": schema.StringAttribute{
 										Description: "Placement mode.",
-										Required:    true,
+										Optional:    true,
 									},
 								},
 							},
@@ -674,6 +689,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 										},
 										"environment": schema.StringAttribute{
 											Description: "The Service environment.",
+											Computed:    true,
 											Optional:    true,
 										},
 									},
@@ -684,6 +700,9 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								Computed:           true,
 								Optional:           true,
 								DeprecationMessage: "All new projects now use the Standard usage model.",
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 								Validators: []validator.String{
 									stringvalidator.OneOfCaseInsensitive(
 										"standard",
@@ -691,7 +710,6 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 										"unbound",
 									),
 								},
-								Default: stringdefault.StaticString("standard"),
 							},
 							"vectorize_bindings": schema.MapNestedAttribute{
 								Description: "Vectorize bindings used for Pages Functions.",

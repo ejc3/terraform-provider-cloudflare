@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -55,8 +56,10 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Required:    true,
 			},
 			"precedence": schema.Float64Attribute{
-				Description: "The precedence of the policy. Lower values indicate higher precedence. Policies will be evaluated in ascending order of this field.",
-				Required:    true,
+				Description:   "The precedence of the policy. Lower values indicate higher precedence. Policies will be evaluated in ascending order of this field.",
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.Float64{float64planmodifier.UseStateForUnknown()},
 			},
 			"lan_allow_minutes": schema.Float64Attribute{
 				Description: "The amount of time in minutes a user is allowed access to their LAN. A value of 0 will allow LAN access until the next WARP reconnection, such as a reboot or a laptop waking from sleep. Note that this field is omitted from the response if null or unset.",
@@ -261,10 +264,10 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(false),
 			},
 			"tunnel_protocol": schema.StringAttribute{
-				Description: "Determines which tunnel protocol to use.",
-				Computed:    true,
-				Optional:    true,
-				Default:     stringdefault.StaticString(""),
+				Description:   "Determines which tunnel protocol to use.",
+				Computed:      true,
+				Optional:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"dns_search_suffixes": schema.ListNestedAttribute{
 				Description: "List of DNS search suffixes to apply to clients. Suffixes are evaluated in order. Use an empty array to clear.",

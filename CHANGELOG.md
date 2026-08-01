@@ -4,15 +4,6 @@
 
 Full Changelog: [v5.22.0...v5.23.0](https://github.com/cloudflare/terraform-provider-cloudflare/compare/v5.22.0...v5.23.0)
 
-### ⚠ BREAKING CHANGES
-
-The following provider-level configuration attributes have been renamed or removed. Existing Terraform configurations that reference the old attribute names must be updated before `terraform plan` will succeed. Environment variable names (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_API_KEY`, `CLOUDFLARE_EMAIL`, `CLOUDFLARE_API_USER_SERVICE_KEY`) are unchanged and continue to work.
-
-* **provider:** `email` has been renamed to `api_email`. Update your provider block: `email = "..."` becomes `api_email = "..."`. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
-* **provider:** `api_user_service_key` has been renamed to `user_service_key`. Update your provider block: `api_user_service_key = "..."` becomes `user_service_key = "..."`. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
-* **provider:** `user_agent_operator_suffix` has been removed. Remove any `user_agent_operator_suffix = "..."` from your provider block. The Terraform version is now always included in the User-Agent header. ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))
-
-
 ### New Data Sources
 
 * **cloudflare_zero_trust_dlp_custom_prompt_topic:** add data source for DLP custom prompt topics ([ae6a505](https://github.com/cloudflare/terraform-provider-cloudflare/commit/ae6a505c6e))

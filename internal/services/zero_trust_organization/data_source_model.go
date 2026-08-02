@@ -29,6 +29,7 @@ type ZeroTrustOrganizationDataSourceModel struct {
 	SessionDuration                        types.String                                                                        `tfsdk:"session_duration" json:"session_duration,computed"`
 	UIReadOnlyToggleReason                 types.String                                                                        `tfsdk:"ui_read_only_toggle_reason" json:"ui_read_only_toggle_reason,computed"`
 	UserSeatExpirationInactiveTime         types.String                                                                        `tfsdk:"user_seat_expiration_inactive_time" json:"user_seat_expiration_inactive_time,computed"`
+	WARPAuthNonBrowser401                  types.Bool                                                                          `tfsdk:"warp_auth_non_browser_401" json:"warp_auth_non_browser_401,computed"`
 	WARPAuthSessionDuration                types.String                                                                        `tfsdk:"warp_auth_session_duration" json:"warp_auth_session_duration,computed"`
 	DenyUnmatchedRequestsExemptedZoneNames customfield.List[types.String]                                                      `tfsdk:"deny_unmatched_requests_exempted_zone_names" json:"deny_unmatched_requests_exempted_zone_names,computed"`
 	CustomPages                            customfield.NestedObject[ZeroTrustOrganizationCustomPagesDataSourceModel]           `tfsdk:"custom_pages" json:"custom_pages,computed"`

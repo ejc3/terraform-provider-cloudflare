@@ -206,7 +206,7 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 										},
 									},
 									"is_shared_oauth_callback_enabled": schema.BoolAttribute{
-										Description: "When true, the gateway worker uses the shared Cloudflare-owned OAuth callback endpoint as the redirect_uri for upstream on-behalf OAuth, instead of the customer portal hostname. Defaults to false (off); opt in per server by setting true. Effective behavior is gated by the gateway worker's per-env rollout mode KV key.",
+										Description: "When true, the gateway worker uses the shared Cloudflare-owned OAuth callback endpoint as the redirect_uri for upstream on-behalf OAuth, instead of the customer portal hostname. Defaults to false (off); opt in per server by setting true.",
 										Computed:    true,
 									},
 									"last_successful_sync": schema.StringAttribute{
@@ -299,8 +299,21 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 							},
 						},
 						"allow_code_mode": schema.BoolAttribute{
-							Description: "Allow remote code execution in Dynamic Workers (beta)",
+							Description:        "Deprecated: use `code_mode` instead. Legacy on/off toggle for Dynamic Workers (codemode). `true` maps to any non-off `code_mode`; `false` maps to `code_mode: off`.",
+							Computed:           true,
+							DeprecationMessage: "This attribute is deprecated.",
+						},
+						"code_mode": schema.StringAttribute{
+							Description: "Controls Dynamic Workers (codemode) availability for this portal. `off` disables codemode. `opt_in` makes it available but clients must opt in per session. `default_on` enables it by default with a client override. `enforced` requires codemode for every session with no override.\nAvailable values: \"off\", \"opt_in\", \"default_on\", \"enforced\".",
 							Computed:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOfCaseInsensitive(
+									"off",
+									"opt_in",
+									"default_on",
+									"enforced",
+								),
+							},
 						},
 						"created_at": schema.StringAttribute{
 							Computed:   true,

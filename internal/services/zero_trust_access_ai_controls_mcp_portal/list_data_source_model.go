@@ -43,6 +43,7 @@ type ZeroTrustAccessAIControlsMcpPortalsResultDataSourceModel struct {
 	Name             types.String                                                                           `tfsdk:"name" json:"name,computed"`
 	Servers          customfield.NestedObjectSet[ZeroTrustAccessAIControlsMcpPortalsServersDataSourceModel] `tfsdk:"servers" json:"servers,computed"`
 	AllowCodeMode    types.Bool                                                                             `tfsdk:"allow_code_mode" json:"allow_code_mode,computed"`
+	CodeMode         types.String                                                                           `tfsdk:"code_mode" json:"code_mode,computed"`
 	CreatedAt        timetypes.RFC3339                                                                      `tfsdk:"created_at" json:"created_at,computed" format:"date-time"`
 	CreatedBy        types.String                                                                           `tfsdk:"created_by" json:"created_by,computed"`
 	Description      types.String                                                                           `tfsdk:"description" json:"description,computed"`

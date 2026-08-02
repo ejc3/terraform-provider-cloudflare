@@ -4,6 +4,7 @@ resource "cloudflare_zero_trust_access_ai_controls_mcp_portal" "example_zero_tru
   hostname = "exmaple.com"
   name = "My MCP Portal"
   allow_code_mode = true
+  code_mode = "opt_in"
   description = "This is my custom MCP Portal"
   secure_web_gateway = false
   servers = [{

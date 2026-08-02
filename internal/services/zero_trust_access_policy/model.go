@@ -22,10 +22,10 @@ type ZeroTrustAccessPolicyModel struct {
 	IsolationRequired            types.Bool                                                     `tfsdk:"isolation_required" json:"isolation_required,optional"`
 	PurposeJustificationPrompt   types.String                                                   `tfsdk:"purpose_justification_prompt" json:"purpose_justification_prompt,optional"`
 	PurposeJustificationRequired types.Bool                                                     `tfsdk:"purpose_justification_required" json:"purpose_justification_required,optional"`
+	SessionDuration              types.String                                                   `tfsdk:"session_duration" json:"session_duration,optional"`
 	ApprovalGroups               *[]*ZeroTrustAccessPolicyApprovalGroupsModel                   `tfsdk:"approval_groups" json:"approval_groups,optional"`
 	ConnectionRules              *ZeroTrustAccessPolicyConnectionRulesModel                     `tfsdk:"connection_rules" json:"connection_rules,optional"`
 	MfaConfig                    *ZeroTrustAccessPolicyMfaConfigModel                           `tfsdk:"mfa_config" json:"mfa_config,optional"`
-	SessionDuration              types.String                                                   `tfsdk:"session_duration" json:"session_duration,computed_optional"`
 	Exclude                      customfield.NestedObjectSet[ZeroTrustAccessPolicyExcludeModel] `tfsdk:"exclude" json:"exclude,computed_optional"`
 	Include                      customfield.NestedObjectSet[ZeroTrustAccessPolicyIncludeModel] `tfsdk:"include" json:"include,computed_optional"`
 	Require                      customfield.NestedObjectSet[ZeroTrustAccessPolicyRequireModel] `tfsdk:"require" json:"require,computed_optional"`

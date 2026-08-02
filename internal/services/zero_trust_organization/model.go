@@ -30,6 +30,7 @@ type ZeroTrustOrganizationModel struct {
 	IsUIReadOnly                           types.Bool                                       `tfsdk:"is_ui_read_only" json:"is_ui_read_only,computed_optional"`
 	MfaRequiredForAllApps                  types.Bool                                       `tfsdk:"mfa_required_for_all_apps" json:"mfa_required_for_all_apps,computed_optional"`
 	UIReadOnlyToggleReason                 types.String                                     `tfsdk:"ui_read_only_toggle_reason" json:"ui_read_only_toggle_reason,computed_optional"`
+	WARPAuthNonBrowser401                  types.Bool                                       `tfsdk:"warp_auth_non_browser_401" json:"warp_auth_non_browser_401,computed_optional"`
 }
 
 func (m ZeroTrustOrganizationModel) MarshalJSON() (data []byte, err error) {

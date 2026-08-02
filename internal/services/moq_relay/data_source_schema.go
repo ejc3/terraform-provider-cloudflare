@@ -71,7 +71,7 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"url": schema.StringAttribute{
-											Description: "Upstream MOQT server publisher URL. Must be an absolute URL with a\nhost and a scheme crique can dial: moqt:// (raw QUIC) or https://\n(WebTransport). Validated on update (PUT); rejected with 21013.",
+											Description: "Upstream MOQT server publisher URL. Must be an absolute URL with a\nhost and a scheme the relay can dial: moqt:// (raw QUIC) or https://\n(WebTransport). Validated on update (PUT); rejected with 21013.",
 											Computed:    true,
 										},
 									},
@@ -100,10 +100,11 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 						CustomType:  timetypes.RFC3339Type{},
 					},
 					"per_page": schema.Int64Attribute{
-						Description: "Maximum number of relays to return per page.",
+						Description: "Maximum number of relays to return per page. Values above the maximum are\nclamped to it rather than rejected.",
+						Computed:    true,
 						Optional:    true,
 						Validators: []validator.Int64{
-							int64validator.AtLeast(1),
+							int64validator.Between(1, 1000),
 						},
 					},
 				},

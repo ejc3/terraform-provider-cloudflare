@@ -65,13 +65,6 @@ func (r *WorkerResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	prior := *data
-
-	resp.Diagnostics.Append(omitPropagationPolicyWhenTracesDisabled(ctx, data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	dataBytes, err := data.MarshalJSON()
 	if err != nil {
 		resp.Diagnostics.AddError("failed to serialize http request", err.Error())
@@ -100,11 +93,6 @@ func (r *WorkerResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	data = &env.Result
 
-	resp.Diagnostics.Append(preservePropagationPolicy(ctx, data, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -121,13 +109,6 @@ func (r *WorkerResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	prior := *data
-
-	resp.Diagnostics.Append(omitPropagationPolicyWhenTracesDisabled(ctx, data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -160,11 +141,6 @@ func (r *WorkerResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 	data = &env.Result
-
-	resp.Diagnostics.Append(preservePropagationPolicy(ctx, data, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

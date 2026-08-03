@@ -21,59 +21,6 @@ func importStateWithPropagationPolicyDefault(ctx context.Context) *WorkerModel {
 	return &WorkerModel{Observability: obsObj}
 }
 
-// omitPropagationPolicyWhenTracesDisabled clears
-// observability.traces.propagation_policy from the outgoing payload when
-// traces.enabled is false.
-//
-// Some accounts do not have the trace propagation feature entitlement. Sending
-// propagation_policy with traces disabled returns a 403 from the Workers API.
-// In that scenario propagation_policy has no effect and should be omitted.
-func omitPropagationPolicyWhenTracesDisabled(ctx context.Context, data *WorkerModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if data == nil {
-		return diags
-	}
-	if data.Observability.IsNull() || data.Observability.IsUnknown() {
-		return diags
-	}
-
-	obs, d := data.Observability.Value(ctx)
-	diags.Append(d...)
-	if diags.HasError() || obs == nil {
-		return diags
-	}
-	if obs.Traces.IsNull() || obs.Traces.IsUnknown() {
-		return diags
-	}
-
-	traces, d := obs.Traces.Value(ctx)
-	diags.Append(d...)
-	if diags.HasError() || traces == nil {
-		return diags
-	}
-
-	if traces.Enabled.IsUnknown() || traces.Enabled.IsNull() || traces.Enabled.ValueBool() {
-		return diags
-	}
-
-	traces.PropagationPolicy = types.StringNull()
-	newTraces, d := customfield.NewObject(ctx, traces)
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
-	obs.Traces = newTraces
-
-	newObs, d := customfield.NewObject(ctx, obs)
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
-	}
-	data.Observability = newObs
-
-	return diags
-}
-
 // preservePropagationPolicy restores observability.traces.propagation_policy from
 // the prior state when the API response is missing it.
 //

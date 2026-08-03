@@ -135,6 +135,7 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/pipeline"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/pipeline_sink"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/pipeline_stream"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/precursor"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/queue"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/queue_consumer"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/r2_bucket"
@@ -593,6 +594,7 @@ func (p *CloudflareProvider) Resources(ctx context.Context) []func() resource.Re
 		vulnerability_scanner_credential.NewResource,
 		vulnerability_scanner_target_environment.NewResource,
 		bot_management.NewResource,
+		precursor.NewResource,
 		origin_tls_compliance_modes.NewResource,
 		google_tag_gateway.NewResource,
 		observatory_scheduled_test.NewResource,
@@ -994,6 +996,7 @@ func (p *CloudflareProvider) DataSources(ctx context.Context) []func() datasourc
 		vulnerability_scanner_target_environment.NewVulnerabilityScannerTargetEnvironmentDataSource,
 		vulnerability_scanner_target_environment.NewVulnerabilityScannerTargetEnvironmentsDataSource,
 		bot_management.NewBotManagementDataSource,
+		precursor.NewPrecursorDataSource,
 		origin_tls_compliance_modes.NewOriginTLSComplianceModesDataSource,
 		google_tag_gateway.NewGoogleTagGatewayDataSource,
 		observatory_scheduled_test.NewObservatoryScheduledTestDataSource,

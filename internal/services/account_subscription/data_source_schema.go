@@ -91,22 +91,22 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 				CustomType:  customfield.NewNestedObjectType[AccountSubscriptionRatePlanDataSourceModel](ctx),
 				Attributes: map[string]schema.Attribute{
 					"id": schema.StringAttribute{
-						Description: "The ID of the rate plan.\nAvailable values: \"free\", \"lite\", \"pro\", \"pro_plus\", \"business\", \"enterprise\", \"partners_free\", \"partners_pro\", \"partners_business\", \"partners_enterprise\".",
-						Computed:    true,
-						Validators: []validator.String{
-							stringvalidator.OneOfCaseInsensitive(
-								"free",
-								"lite",
-								"pro",
-								"pro_plus",
-								"business",
-								"enterprise",
-								"partners_free",
-								"partners_pro",
-								"partners_business",
-								"partners_enterprise",
-							),
-						},
+					Description: "The ID of the rate plan.\nAvailable values: \"free\", \"lite\", \"pro\", \"pro_plus\", \"business\", \"enterprise\", \"partners_free\", \"partners_pro\", \"partners_business\", \"partners_ent\".",
+					Computed:    true,
+					Validators: []validator.String{
+						stringvalidator.OneOfCaseInsensitive(
+							"free",
+							"lite",
+							"pro",
+							"pro_plus",
+							"business",
+							"enterprise",
+							"partners_free",
+							"partners_pro",
+							"partners_business",
+							"partners_ent",
+						),
+					},
 					},
 					"currency": schema.StringAttribute{
 						Description: "The currency applied to the rate plan subscription.",

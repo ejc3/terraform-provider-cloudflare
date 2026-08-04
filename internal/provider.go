@@ -1005,6 +1005,7 @@ func (p *CloudflareProvider) DataSources(ctx context.Context) []func() datasourc
 		observatory_scheduled_test.NewObservatoryScheduledTestDataSource,
 		dcv_delegation.NewDCVDelegationDataSource,
 		hostname_tls_setting.NewHostnameTLSSettingDataSource,
+		hostname_tls_setting.NewHostnameTLSSettingsDataSource,
 		snippet.NewSnippetDataSource,
 		snippet.NewSnippetsDataSource,
 		snippet_rules.NewSnippetRulesDataSource,

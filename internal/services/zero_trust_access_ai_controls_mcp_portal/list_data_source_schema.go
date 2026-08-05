@@ -299,12 +299,12 @@ func ListDataSourceSchema(ctx context.Context) schema.Schema {
 							},
 						},
 						"allow_code_mode": schema.BoolAttribute{
-							Description:        "Deprecated: use `code_mode` instead. Legacy on/off toggle for Dynamic Workers (codemode). `true` maps to any non-off `code_mode`; `false` maps to `code_mode: off`.",
+							Description:        "Deprecated: use `code_mode` for new integrations. `true` maps to any non-off Code Mode policy; `false` maps to `code_mode: off`. If both fields are sent, they must be consistent or the request returns a 400.",
 							Computed:           true,
 							DeprecationMessage: "This attribute is deprecated.",
 						},
 						"code_mode": schema.StringAttribute{
-							Description: "Controls Dynamic Workers (codemode) availability for this portal. `off` disables codemode. `opt_in` makes it available but clients must opt in per session. `default_on` enables it by default with a client override. `enforced` requires codemode for every session with no override.\nAvailable values: \"off\", \"opt_in\", \"default_on\", \"enforced\".",
+							Description: "Code Mode policy for this portal. `off`: Code Mode is unavailable; query parameters are ignored. `opt_in`: Code Mode is off by default; clients turn it on with `?codemode=search_and_execute`. `default_on`: Code Mode is on by default; clients can opt out with `?codemode=off`. `enforced`: Code Mode is always on; query parameters are ignored. Defaults to `opt_in` when omitted on create. If both `code_mode` and `allow_code_mode` are sent, they must be consistent or the request returns a 400.\nAvailable values: \"off\", \"opt_in\", \"default_on\", \"enforced\".",
 							Computed:    true,
 							Validators: []validator.String{
 								stringvalidator.OneOfCaseInsensitive(

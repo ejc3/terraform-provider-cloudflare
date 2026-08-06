@@ -186,6 +186,19 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 								},
 							},
 						},
+						"authentication_status": schema.StringAttribute{
+							Description: "Whether administrative authentication is required before capabilities can be synced. Manual OAuth is user-managed and has no administrative authentication flow.\nAvailable values: \"not_required\", \"required\", \"connected\", \"stale\", \"manual\".",
+							Computed:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOfCaseInsensitive(
+									"not_required",
+									"required",
+									"connected",
+									"stale",
+									"manual",
+								),
+							},
+						},
 						"created_at": schema.StringAttribute{
 							Computed:   true,
 							CustomType: timetypes.RFC3339Type{},

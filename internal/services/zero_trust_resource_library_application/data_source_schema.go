@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/customfield"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -23,8 +24,11 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 			"account_id": schema.StringAttribute{
 				Required: true,
 			},
-			"id": schema.StringAttribute{
+			"id": schema.Int64Attribute{
 				Required: true,
+				Validators: []validator.Int64{
+					int64validator.Between(0, 4294967295),
+				},
 			},
 			"application_confidence_score": schema.Float64Attribute{
 				Description: "Confidence score for the application. Returns -1 when no score is available.",
@@ -52,10 +56,6 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"human_id": schema.StringAttribute{
 				Description: "Returns the human readable ID.",
-				Computed:    true,
-			},
-			"intel_id": schema.Int64Attribute{
-				Description: "Returns the Intel API ID for the application.",
 				Computed:    true,
 			},
 			"name": schema.StringAttribute{

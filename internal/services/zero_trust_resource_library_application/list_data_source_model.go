@@ -53,7 +53,7 @@ func (m *ZeroTrustResourceLibraryApplicationsDataSourceModel) toListParams(_ con
 }
 
 type ZeroTrustResourceLibraryApplicationsResultDataSourceModel struct {
-	ID                          types.String                   `tfsdk:"id" json:"id,computed"`
+	ID                          types.Int64                    `tfsdk:"id" json:"id,computed"`
 	ApplicationConfidenceScore  types.Float64                  `tfsdk:"application_confidence_score" json:"application_confidence_score,computed"`
 	ApplicationSource           types.String                   `tfsdk:"application_source" json:"application_source,computed"`
 	ApplicationType             types.String                   `tfsdk:"application_type" json:"application_type,computed"`
@@ -70,5 +70,4 @@ type ZeroTrustResourceLibraryApplicationsResultDataSourceModel struct {
 	UpdatedAt                   types.String                   `tfsdk:"updated_at" json:"updated_at,computed"`
 	Version                     types.String                   `tfsdk:"version" json:"version,computed"`
 	ApplicationScoreComposition jsontypes.Normalized           `tfsdk:"application_score_composition" json:"application_score_composition,computed"`
-	IntelID                     types.Int64                    `tfsdk:"intel_id" json:"intel_id,computed"`
 }

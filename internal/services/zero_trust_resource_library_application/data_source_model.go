@@ -19,7 +19,7 @@ type ZeroTrustResourceLibraryApplicationResultDataSourceEnvelope struct {
 
 type ZeroTrustResourceLibraryApplicationDataSourceModel struct {
 	AccountID                   types.String                   `tfsdk:"account_id" path:"account_id,required"`
-	ID                          types.String                   `tfsdk:"id" path:"id,required"`
+	ID                          types.Int64                    `tfsdk:"id" path:"id,required"`
 	ApplicationConfidenceScore  types.Float64                  `tfsdk:"application_confidence_score" json:"application_confidence_score,computed"`
 	ApplicationSource           types.String                   `tfsdk:"application_source" json:"application_source,computed"`
 	ApplicationType             types.String                   `tfsdk:"application_type" json:"application_type,computed"`
@@ -27,7 +27,6 @@ type ZeroTrustResourceLibraryApplicationDataSourceModel struct {
 	CreatedAt                   types.String                   `tfsdk:"created_at" json:"created_at,computed"`
 	GenAIScore                  types.Float64                  `tfsdk:"gen_ai_score" json:"gen_ai_score,computed"`
 	HumanID                     types.String                   `tfsdk:"human_id" json:"human_id,computed"`
-	IntelID                     types.Int64                    `tfsdk:"intel_id" json:"intel_id,computed"`
 	Name                        types.String                   `tfsdk:"name" json:"name,computed"`
 	UpdatedAt                   types.String                   `tfsdk:"updated_at" json:"updated_at,computed"`
 	Version                     types.String                   `tfsdk:"version" json:"version,computed"`

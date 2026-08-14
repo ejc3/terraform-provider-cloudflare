@@ -622,8 +622,8 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 							Description: "The ID of the Cloudflare Worker to protect. Required for `worker` and `preview_worker` destinations, and invalid for account-wide Worker destinations.",
 							Optional:    true,
 							Validators: []validator.String{
-								customvalidator.RequiresOtherStringAttributeToBeOneOf(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
-								customvalidator.RequiredWhenOtherStringIsOneOf(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
+								customvalidator.RequiresOtherStringAttributeToBeOneOfCaseInsensitive(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
+								customvalidator.RequiredWhenOtherStringIsOneOfCaseInsensitive(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
 							},
 						},
 					},

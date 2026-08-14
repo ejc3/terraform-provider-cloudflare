@@ -20,6 +20,7 @@ func TestZeroTrustAccessApplicationDestinationMarshalJSON(t *testing.T) {
 		"private":               `{"cidr":"10.0.0.0/24","hostname":"origin.example.com","l4_protocol":"tcp","port_range":"443","type":"private","vnet_id":"vnet-id"}`,
 		"via_mcp_server_portal": `{"mcp_server_id":"mcp-server-id","type":"via_mcp_server_portal"}`,
 		"worker":                `{"type":"worker","worker_id":"worker-id"}`,
+		"WORKER":                `{"type":"worker","worker_id":"worker-id"}`,
 		"preview_worker":        `{"type":"preview_worker","worker_id":"worker-id"}`,
 		"all_workers":           `{"type":"all_workers"}`,
 		"all_preview_workers":   `{"type":"all_preview_workers"}`,

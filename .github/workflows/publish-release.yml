@@ -57,7 +57,8 @@ jobs:
           GOTOOLCHAIN: local
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+          SEMVER_RE='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ ! "$VERSION" =~ $SEMVER_RE ]]; then
             echo "Tag must be a v-prefixed semantic version; got ${GITHUB_REF_NAME}" >&2
             exit 1
           fi
@@ -123,9 +124,15 @@ jobs:
           EXPECTED_FINGERPRINT=$(gpg --batch --show-keys --with-colons terraform-registry-signing-key.asc | awk -F: '$1 == "fpr" { print $10; exit }')
           test "${EXPECTED_FINGERPRINT^^}" = "${IMPORTED_FINGERPRINT^^}"
       - name: Copy manifest
+        id: release_metadata
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           cp terraform-registry-manifest.json "dist/terraform-provider-cloudflare_${VERSION}_manifest.json"
+          if [[ "${VERSION%%+*}" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Generate checksums
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
@@ -142,7 +149,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ steps.release_metadata.outputs.prerelease == 'true' }}
           fail_on_unmatched_files: true
           files: |
             dist/*.zip

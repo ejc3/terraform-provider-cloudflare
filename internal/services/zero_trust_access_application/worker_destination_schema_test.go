@@ -22,6 +22,9 @@ func TestZeroTrustAccessApplicationWorkerDestinationValidation(t *testing.T) {
 		"preview worker": {
 			config: workerDestinationConfig(accountID, "preview_worker", true),
 		},
+		"mixed case worker": {
+			config: workerDestinationConfig(accountID, "WORKER", true),
+		},
 		"all workers": {
 			config: workerDestinationConfig(accountID, "all_workers", false),
 		},
@@ -30,11 +33,15 @@ func TestZeroTrustAccessApplicationWorkerDestinationValidation(t *testing.T) {
 		},
 		"worker missing worker id": {
 			config:      workerDestinationConfig(accountID, "worker", false),
-			expectError: regexp.MustCompile(`worker_id.*has to be set.*worker.*preview_worker`),
+			expectError: regexp.MustCompile(`(?s)worker_id.*has to be set.*worker.*preview_worker`),
+		},
+		"mixed case worker missing worker id": {
+			config:      workerDestinationConfig(accountID, "WoRkEr", false),
+			expectError: regexp.MustCompile(`(?s)worker_id.*has to be set.*worker.*preview_worker`),
 		},
 		"all workers rejects worker id": {
 			config:      workerDestinationConfig(accountID, "all_workers", true),
-			expectError: regexp.MustCompile(`worker_id.*can only be set.*worker.*preview_worker`),
+			expectError: regexp.MustCompile(`(?s)worker_id.*can only be set.*worker.*preview_worker`),
 		},
 	}
 
@@ -43,9 +50,10 @@ func TestZeroTrustAccessApplicationWorkerDestinationValidation(t *testing.T) {
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV6ProviderFactories: acctest.TestAccProtoV6ProviderFactories,
 				Steps: []resource.TestStep{{
-					Config:      test.config,
-					PlanOnly:    true,
-					ExpectError: test.expectError,
+					Config:             test.config,
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: test.expectError == nil,
+					ExpectError:        test.expectError,
 				}},
 			})
 		})

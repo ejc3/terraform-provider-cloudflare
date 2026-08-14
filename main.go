@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/cloudflare/cloudflare",
+		Address: "registry.terraform.io/ejc3/cloudflare",
 		Debug:   debug,
 	}
 

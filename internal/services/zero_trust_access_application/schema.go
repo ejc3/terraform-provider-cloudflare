@@ -564,6 +564,8 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 									"all_workers",
 									"all_preview_workers",
 								),
+								canonicalWorkerDestinationTypeValidator{},
+								workerDestinationApplicationTypeValidator{},
 							},
 						},
 						"uri": schema.StringAttribute{

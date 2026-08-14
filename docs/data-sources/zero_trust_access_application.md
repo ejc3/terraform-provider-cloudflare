@@ -19,7 +19,7 @@ data "cloudflare_zero_trust_access_application" "example_zero_trust_access_appli
 }
 ```
 
-The destination result includes `worker_id` for Worker-native Access applications:
+Per-Worker `worker` and `preview_worker` destination results include `worker_id`:
 
 ```terraform
 output "access_application_worker_destinations" {
@@ -1061,4 +1061,3 @@ Read-Only:
 - `protocol` (String) The communication protocol your application secures.
 Available values: "SSH", "RDP".
 - `target_attributes` (Map of List of String) Contains a map of target attribute keys to target attribute values.
-

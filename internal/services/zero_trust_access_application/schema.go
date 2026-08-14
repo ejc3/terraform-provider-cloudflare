@@ -84,7 +84,7 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				Optional:    true,
 			},
 			"domain": schema.StringAttribute{
-				Description: "The primary hostname and path secured by Access. This domain will be displayed if the app is visible in the App Launcher.",
+				Description: "The primary hostname and path secured by Access. This domain will be displayed if the app is visible in the App Launcher. Omit this field for self-hosted applications that use a Worker destination.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -550,12 +550,20 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Description: `Available values: "public", "private".`,
+							Description: `Available values: "public", "private", "via_mcp_server_portal", "worker", "preview_worker", "all_workers", "all_preview_workers".`,
 							Optional:    true,
 							Computed:    true,
 							Default:     stringdefault.StaticString("public"),
 							Validators: []validator.String{
-								stringvalidator.OneOfCaseInsensitive("public", "private", "via_mcp_server_portal"),
+								stringvalidator.OneOfCaseInsensitive(
+									"public",
+									"private",
+									"via_mcp_server_portal",
+									"worker",
+									"preview_worker",
+									"all_workers",
+									"all_preview_workers",
+								),
 							},
 						},
 						"uri": schema.StringAttribute{
@@ -608,6 +616,14 @@ func ResourceSchema(ctx context.Context) schema.Schema {
 								customvalidator.RequiresOtherStringAttributeToBeOneOf(path.MatchRelative().AtParent().AtName("type"), "via_mcp_server_portal"),
 								customvalidator.RequiredWhenOtherStringIsOneOf(path.MatchRelative().AtParent().AtName("type"), "via_mcp_server_portal"),
 								customvalidator.RequiresOtherStringAttributeToBeOneOf(path.MatchRoot("type"), "mcp"),
+							},
+						},
+						"worker_id": schema.StringAttribute{
+							Description: "The ID of the Cloudflare Worker to protect. Required for `worker` and `preview_worker` destinations, and invalid for account-wide Worker destinations.",
+							Optional:    true,
+							Validators: []validator.String{
+								customvalidator.RequiresOtherStringAttributeToBeOneOf(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
+								customvalidator.RequiredWhenOtherStringIsOneOf(path.MatchRelative().AtParent().AtName("type"), "worker", "preview_worker"),
 							},
 						},
 					},

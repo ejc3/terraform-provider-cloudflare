@@ -14,7 +14,8 @@ on:
 
 jobs:
   build:
-    runs-on: lx64
+    if: github.repository == 'ejc3/terraform-provider-cloudflare'
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -39,72 +40,88 @@ jobs:
             goarch: arm64
             extension: .exe
     steps:
-      - name: Cleanup unused directories and tools
-        run: |
-          df -h /
-          sudo apt-get remove -y '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel google-cloud-sdk google-cloud-cli microsoft-edge-stable snapd --fix-missing 2>/dev/null || true
-          sudo apt-get autoremove -y 2>/dev/null || true
-          sudo apt-get clean 2>/dev/null || true
-          sudo docker image prune --all --force 2>/dev/null || true
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY" /opt/google/chrome /opt/microsoft/msedge /opt/microsoft/powershell /opt/pipx /usr/lib/mono /usr/local/julia* /usr/local/lib/android /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/share/dotnet /usr/share/swift 2>/dev/null || true
-          ghcup nuke 2>/dev/null || true
-          df -h /
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
+          cache: true
       - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+          GOTOOLCHAIN: local
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must be a v-prefixed semantic version; got ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
           BINARY_NAME="terraform-provider-cloudflare_v${VERSION}${{ matrix.extension }}"
-          COMMIT=$(git rev-parse --short HEAD)
-          TIMESTAMP=$(git log -1 --format=%ct)
-          go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o "dist/${BINARY_NAME}"
-          touch -d "@${TIMESTAMP}" "dist/${BINARY_NAME}"
-          echo "binary_name=${BINARY_NAME}" >> $GITHUB_ENV
-          echo "version=${VERSION}" >> $GITHUB_ENV
+          COMMIT=$(git rev-parse HEAD)
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$COMMIT")
+
+          mkdir -p dist
+          go build \
+            -mod=readonly \
+            -trimpath \
+            -buildvcs=true \
+            -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
+            -o "dist/${BINARY_NAME}" \
+            .
+          touch -d "@${SOURCE_DATE_EPOCH}" "dist/${BINARY_NAME}"
+
+          go version -m "dist/${BINARY_NAME}" | grep -F "vcs.revision=${COMMIT}"
+          echo "BINARY_NAME=${BINARY_NAME}" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}" >> "$GITHUB_ENV"
       - name: Create archive
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          BINARY_NAME="terraform-provider-cloudflare_v${VERSION}${{ matrix.extension }}"
           cd dist
           ARCHIVE_NAME="terraform-provider-cloudflare_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.zip"
-          zip "$ARCHIVE_NAME" "$BINARY_NAME"
+          TZ=UTC zip -X -9 "$ARCHIVE_NAME" "$BINARY_NAME"
+          test "$(unzip -Z1 "$ARCHIVE_NAME")" = "$BINARY_NAME"
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: terraform-provider-cloudflare-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*.zip
+          if-no-files-found: error
+          compression-level: 0
           retention-days: 7
 
   release:
     needs: build
-    runs-on: lx64
+    if: github.repository == 'ejc3/terraform-provider-cloudflare'
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist
           merge-multiple: true
       - name: Import GPG key
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Verify signing identity
+        env:
+          IMPORTED_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        run: |
+          EXPECTED_FINGERPRINT=$(gpg --batch --show-keys --with-colons terraform-registry-signing-key.asc | awk -F: '$1 == "fpr" { print $10; exit }')
+          test "${EXPECTED_FINGERPRINT^^}" = "${IMPORTED_FINGERPRINT^^}"
       - name: Copy manifest
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
@@ -113,15 +130,20 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           cd dist
-          sha256sum terraform-provider-cloudflare_*.zip "terraform-provider-cloudflare_${VERSION}_manifest.json" > "terraform-provider-cloudflare_${VERSION}_SHA256SUMS"
+          LC_ALL=C sha256sum terraform-provider-cloudflare_*.zip "terraform-provider-cloudflare_${VERSION}_manifest.json" \
+            | sort -k2 > "terraform-provider-cloudflare_${VERSION}_SHA256SUMS"
       - name: Sign checksums
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           cd dist
           gpg --batch --local-user "${{ steps.import_gpg.outputs.fingerprint }}" --output "terraform-provider-cloudflare_${VERSION}_SHA256SUMS.sig" --detach-sign "terraform-provider-cloudflare_${VERSION}_SHA256SUMS"
+          gpg --verify "terraform-provider-cloudflare_${VERSION}_SHA256SUMS.sig" "terraform-provider-cloudflare_${VERSION}_SHA256SUMS"
+          sha256sum --check "terraform-provider-cloudflare_${VERSION}_SHA256SUMS"
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
           files: |
             dist/*.zip
             dist/*_SHA256SUMS
@@ -129,7 +151,3 @@ jobs:
             dist/*_manifest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run registry sync
-        run: ./scripts/trigger-terraform-registry-sync
-        env:
-          TERRAFORM_REGISTRY_COOKIE: ${{ secrets.TERRAFORM_REGISTRY_COOKIE }}

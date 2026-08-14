@@ -19,7 +19,7 @@ env:
 
 jobs:
   check-schema-versions:
-    runs-on: ${{ github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64' }}
+    runs-on: ${{ github.repository == 'ejc3/terraform-provider-cloudflare' && 'ubuntu-24.04' || (github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64') }}
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     steps:
       - uses: actions/checkout@v6
@@ -28,7 +28,7 @@ jobs:
         run: ./scripts/check-schema-versions
 
   lint:
-    runs-on: ${{ github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64' }}
+    runs-on: ${{ github.repository == 'ejc3/terraform-provider-cloudflare' && 'ubuntu-24.04' || (github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64') }}
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
     steps:
       - uses: actions/checkout@v6
@@ -50,7 +50,7 @@ jobs:
 
   test:
     name: Unit Tests (shard ${{ matrix.shard }})
-    runs-on: ${{ github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64' }}
+    runs-on: ${{ github.repository == 'ejc3/terraform-provider-cloudflare' && 'ubuntu-24.04' || (github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64') }}
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
     timeout-minutes: 30
     strategy:

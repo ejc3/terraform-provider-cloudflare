@@ -40,9 +40,6 @@ jobs:
         run: |
           ./scripts/link 'github.com/stainless-sdks/cloudflare-go/v7@${{ github.ref_name }}' || true
 
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
       - name: Run lints
         run: ./scripts/lint
 
@@ -68,9 +65,6 @@ jobs:
         if: github.repository == 'stainless-sdks/cloudflare-terraform'
         run: |
           ./scripts/link 'github.com/stainless-sdks/cloudflare-go/v7@${{ github.ref_name }}' || true
-
-      - name: Bootstrap
-        run: ./scripts/bootstrap
 
       - name: Run tests
         run: |

@@ -20,9 +20,15 @@ func RequiresOtherStringAttributeToBeOneOf(pathExpr path.Expression, wantStrValu
 		wantValues = append(wantValues, types.StringValue(v))
 	}
 	return requiresOtherAttributeToBeOneOfValidator{
-		pathExpr,
-		wantValues,
+		pathExpr:   pathExpr,
+		wantValues: wantValues,
 	}
+}
+
+func RequiresOtherStringAttributeToBeOneOfCaseInsensitive(pathExpr path.Expression, wantStrValues ...string) requiresOtherAttributeToBeOneOfValidator {
+	v := RequiresOtherStringAttributeToBeOneOf(pathExpr, wantStrValues...)
+	v.caseInsensitiveString = true
+	return v
 }
 
 func RequiresOtherStringAttributeToNullOrBeOneOf(pathExpr path.Expression, wantStrValues ...string) requiresOtherAttributeToBeOneOfValidator {
@@ -32,8 +38,23 @@ func RequiresOtherStringAttributeToNullOrBeOneOf(pathExpr path.Expression, wantS
 }
 
 type requiresOtherAttributeToBeOneOfValidator struct {
-	pathExpr   path.Expression
-	wantValues []attr.Value
+	pathExpr              path.Expression
+	wantValues            []attr.Value
+	caseInsensitiveString bool
+}
+
+func (i requiresOtherAttributeToBeOneOfValidator) matches(gotValue, wantValue attr.Value) bool {
+	if !i.caseInsensitiveString {
+		return gotValue.Equal(wantValue)
+	}
+
+	gotString, gotOK := gotValue.(types.String)
+	wantString, wantOK := wantValue.(types.String)
+	if !gotOK || !wantOK || gotString.IsNull() || wantString.IsNull() {
+		return gotValue.Equal(wantValue)
+	}
+
+	return strings.EqualFold(gotString.ValueString(), wantString.ValueString())
 }
 
 func (i requiresOtherAttributeToBeOneOfValidator) Description(ctx context.Context) string {
@@ -79,7 +100,7 @@ func (i requiresOtherAttributeToBeOneOfValidator) validateAny(ctx context.Contex
 
 		foundMatch := false
 		for _, wantValue := range i.wantValues {
-			if mpVal.Equal(wantValue) {
+			if i.matches(mpVal, wantValue) {
 				foundMatch = true
 				break
 			}

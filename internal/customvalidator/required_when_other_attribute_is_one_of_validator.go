@@ -20,14 +20,35 @@ func RequiredWhenOtherStringIsOneOf(pathExpr path.Expression, wantStrValues ...s
 		wantValues = append(wantValues, types.StringValue(v))
 	}
 	return requiredWhenOtherAttributeIsOneOfValidator{
-		pathExpr,
-		wantValues,
+		pathExpr:   pathExpr,
+		wantValues: wantValues,
 	}
 }
 
+func RequiredWhenOtherStringIsOneOfCaseInsensitive(pathExpr path.Expression, wantStrValues ...string) requiredWhenOtherAttributeIsOneOfValidator {
+	v := RequiredWhenOtherStringIsOneOf(pathExpr, wantStrValues...)
+	v.caseInsensitiveString = true
+	return v
+}
+
 type requiredWhenOtherAttributeIsOneOfValidator struct {
-	pathExpr   path.Expression
-	wantValues []attr.Value
+	pathExpr              path.Expression
+	wantValues            []attr.Value
+	caseInsensitiveString bool
+}
+
+func (i requiredWhenOtherAttributeIsOneOfValidator) matches(gotValue, wantValue attr.Value) bool {
+	if !i.caseInsensitiveString {
+		return gotValue.Equal(wantValue)
+	}
+
+	gotString, gotOK := gotValue.(types.String)
+	wantString, wantOK := wantValue.(types.String)
+	if !gotOK || !wantOK || gotString.IsNull() || wantString.IsNull() {
+		return gotValue.Equal(wantValue)
+	}
+
+	return strings.EqualFold(gotString.ValueString(), wantString.ValueString())
 }
 
 func (i requiredWhenOtherAttributeIsOneOfValidator) Description(ctx context.Context) string {
@@ -72,7 +93,7 @@ func (i requiredWhenOtherAttributeIsOneOfValidator) validateAny(ctx context.Cont
 		}
 
 		for _, wantValue := range i.wantValues {
-			if mpVal.Equal(wantValue) {
+			if i.matches(mpVal, wantValue) {
 				description := fmt.Sprintf("%q %s", attrPath, i.Description(ctx))
 				resDiagnostics.Append(validatordiag.InvalidAttributeCombinationDiagnostic(
 					attrPath,

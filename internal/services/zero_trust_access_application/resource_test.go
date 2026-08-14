@@ -188,6 +188,76 @@ func TestAccCloudflareAccessApplication_BasicAccount(t *testing.T) {
 	})
 }
 
+func TestAccCloudflareAccessApplication_WorkerDestination(t *testing.T) {
+	workerID := os.Getenv("CLOUDFLARE_WORKER_ID")
+	if workerID == "" {
+		t.Skip("CLOUDFLARE_WORKER_ID must identify a Worker in the acceptance-test account")
+	}
+
+	rnd := utils.GenerateRandomResourceName()
+	resourceName := fmt.Sprintf("cloudflare_zero_trust_access_application.%s", rnd)
+	workerConfig := acctest.LoadTestCase("accessapplicationconfigwithworkerdestination.tf", rnd, accountID, workerID)
+	previewConfig := acctest.LoadTestCase("accessapplicationconfigwithpreviewworkerdestination.tf", rnd, accountID, workerID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.TestAccPreCheck(t)
+			acctest.TestAccPreCheck_AccountID(t)
+		},
+		ProtoV6ProviderFactories: acctest.TestAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCloudflareAccessApplicationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: workerConfig,
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New(consts.AccountIDSchemaKey), knownvalue.StringExact(accountID)),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("domain"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("type"), knownvalue.StringExact("self_hosted")),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations"), knownvalue.ListSizeExact(1)),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("type"), knownvalue.StringExact("worker")),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("worker_id"), knownvalue.StringExact(workerID)),
+				},
+			},
+			{
+				Config: previewConfig,
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("domain"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("type"), knownvalue.StringExact("preview_worker")),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("worker_id"), knownvalue.StringExact(workerID)),
+				},
+			},
+			{
+				Config: workerConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("domain"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("type"), knownvalue.StringExact("worker")),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("destinations").AtSliceIndex(0).AtMapKey("worker_id"), knownvalue.StringExact(workerID)),
+				},
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateIdPrefix:     fmt.Sprintf("accounts/%s/", accountID),
+				ImportStateVerifyIgnore: []string{"auto_redirect_to_identity", "enable_binding_cookie", "options_preflight_bypass", "self_hosted_domains", "service_auth_401_redirect"},
+			},
+			{
+				Config: workerConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestAccCloudflareAccessApplication_WithSCIMConfigHttpBasic(t *testing.T) {
 	rnd := utils.GenerateRandomResourceName()
 	name := fmt.Sprintf("cloudflare_zero_trust_access_application.%s", rnd)

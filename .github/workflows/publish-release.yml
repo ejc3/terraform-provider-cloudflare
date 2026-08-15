@@ -52,7 +52,7 @@ jobs:
             exit 1
           fi
 
-          BINARY_NAME="terraform-provider-cloudflare_v${VERSION}${{ matrix.extension }}"
+          BINARY_NAME="terraform-provider-cloudflare_v${VERSION}"
           COMMIT=$(git rev-parse HEAD)
           SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$COMMIT")
 

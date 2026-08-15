@@ -99,7 +99,9 @@ func TestBuildTokenCreateMapsRequestPreservesSecretAndDecodesEnvelope(t *testing
 		}
 		var body map[string]string
 		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
 		}
 		if body["build_token_name"] != "terraform-deployment-token" || body["build_token_secret"] != tokenTestSecret || body["cloudflare_token_id"] != tokenTestCFID {
 			t.Errorf("unexpected request body keys or values")
@@ -194,7 +196,9 @@ func TestBuildTokenReadPaginatesFiltersUUIDAndPreservesSecret(t *testing.T) {
 		case "2":
 			fmt.Fprintf(w, `{"success":true,"result":[%s],"result_info":{"page":2,"total_pages":2}}`, tokenResponse(tokenTestUUID, "renamed-remotely", tokenTestCFID, "user"))
 		default:
-			t.Fatalf("unexpected page %q", request.URL.Query().Get("page"))
+			t.Errorf("unexpected page %q", request.URL.Query().Get("page"))
+			http.Error(w, "unexpected page", http.StatusBadRequest)
+			return
 		}
 	}))
 	defer server.Close()
@@ -230,7 +234,9 @@ func TestBuildTokenReadPaginatesWithoutResultInfo(t *testing.T) {
 		case "2":
 			fmt.Fprintf(w, `{"success":true,"result":[%s]}`, tokenResponse(tokenTestUUID, "from-page-two", tokenTestCFID, "user"))
 		default:
-			t.Fatalf("unexpected page %q", request.URL.Query().Get("page"))
+			t.Errorf("unexpected page %q", request.URL.Query().Get("page"))
+			http.Error(w, "unexpected page", http.StatusBadRequest)
+			return
 		}
 	}))
 	defer server.Close()
@@ -398,8 +404,9 @@ func TestBuildTokenImportedSecretReconciliationIsLocalOnly(t *testing.T) {
 
 func TestBuildTokenRejectsUnexpectedUpdates(t *testing.T) {
 	ctx := context.Background()
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		t.Fatal("unexpected remote request")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		t.Error("unexpected remote request")
+		http.Error(w, "unexpected remote request", http.StatusInternalServerError)
 	}))
 	defer server.Close()
 

@@ -198,13 +198,12 @@ func (r *WorkersBuildTriggerResource) find(ctx context.Context, accountID, exter
 				return true, trigger, nil
 			}
 		}
-		if env.ResultInfo.TotalPages > 0 {
-			if page >= env.ResultInfo.TotalPages {
-				return false, triggerAPIModel{}, nil
-			}
-			continue
+		if env.ResultInfo == nil || env.ResultInfo.TotalPages <= 0 {
+			return false, triggerAPIModel{}, fmt.Errorf("Cloudflare omitted pagination metadata before the managed Workers Builds trigger was found")
 		}
-		return false, triggerAPIModel{}, nil
+		if page >= env.ResultInfo.TotalPages {
+			return false, triggerAPIModel{}, nil
+		}
 	}
 	return false, triggerAPIModel{}, fmt.Errorf("Cloudflare returned more Workers Builds trigger pages than the provider will traverse")
 }

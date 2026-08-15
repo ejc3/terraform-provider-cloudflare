@@ -62,10 +62,15 @@ func TestWorkersBuildTokenSchemaSecretSemantics(t *testing.T) {
 	if diagnostics := established.Set(ctx, &establishedModel); diagnostics.HasError() {
 		t.Fatalf("set established state: %v", diagnostics)
 	}
+	newPlanModel := tokenModel(tokenTestUUID, types.StringValue("new-secret"))
+	newPlan := tfsdk.Plan{Schema: resourceSchema}
+	if diagnostics := newPlan.Set(ctx, &newPlanModel); diagnostics.HasError() {
+		t.Fatalf("set new plan: %v", diagnostics)
+	}
 	response = &planmodifier.StringResponse{}
 	secret.PlanModifiers[0].PlanModifyString(ctx, planmodifier.StringRequest{
 		State:       established,
-		Plan:        plan,
+		Plan:        newPlan,
 		StateValue:  types.StringValue("old-secret"),
 		PlanValue:   types.StringValue("new-secret"),
 		ConfigValue: types.StringValue("new-secret"),
@@ -95,8 +100,24 @@ func TestWorkersBuildTokenSchemaIdentitySemantics(t *testing.T) {
 	}
 	assertBuildTokenInvalidString(t, resourceSchema, "account_id", "short")
 	assertBuildTokenInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")
+	assertBuildTokenValidString(t, resourceSchema, "account_id", tokenTestAccountID)
 	assertBuildTokenInvalidString(t, resourceSchema, "build_token_name", "")
 	assertBuildTokenInvalidString(t, resourceSchema, "cloudflare_token_id", "")
+}
+
+func assertBuildTokenValidString(t *testing.T, resourceSchema schema.Schema, name, value string) {
+	t.Helper()
+	attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
+	response := &validator.StringResponse{}
+	for _, configuredValidator := range attribute.Validators {
+		configuredValidator.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root(name),
+			ConfigValue: types.StringValue(value),
+		}, response)
+	}
+	if response.Diagnostics.HasError() {
+		t.Fatalf("%s unexpectedly rejected %q: %v", name, value, response.Diagnostics)
+	}
 }
 
 func assertBuildTokenInvalidString(t *testing.T, resourceSchema schema.Schema, name, value string) {

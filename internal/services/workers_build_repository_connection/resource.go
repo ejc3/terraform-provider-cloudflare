@@ -73,6 +73,10 @@ func (r *WorkersBuildRepositoryConnectionResource) Create(ctx context.Context, r
 		resp.Diagnostics.AddError("failed to create Workers Builds repository connection", repositoryConnectionCreateError(data, err.Error()))
 		return
 	}
+	if res == nil || res.Body == nil {
+		resp.Diagnostics.AddError("failed to create Workers Builds repository connection", "Cloudflare returned no response body.")
+		return
+	}
 	defer res.Body.Close()
 
 	var envelope repositoryConnectionEnvelope
@@ -139,6 +143,10 @@ func (r *WorkersBuildRepositoryConnectionResource) Delete(ctx context.Context, r
 			_ = res.Body.Close()
 		}
 		resp.Diagnostics.AddError("failed to delete Workers Builds repository connection", err.Error())
+		return
+	}
+	if res == nil || res.Body == nil {
+		resp.Diagnostics.AddError("failed to delete Workers Builds repository connection", "Cloudflare returned no response body.")
 		return
 	}
 	defer res.Body.Close()

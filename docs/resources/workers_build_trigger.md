@@ -2,12 +2,19 @@
 page_title: "cloudflare_workers_build_trigger Resource - Cloudflare"
 subcategory: ""
 description: |-
-  Manages a typed Cloudflare Workers Builds production or preview trigger. Requires a user-scoped API token with Workers CI Write.
+  Accepted Permissions
+  Workers CI Write
+  Manages a typed Cloudflare Workers Builds production or preview trigger.
 ---
 
 # cloudflare_workers_build_trigger (Resource)
 
-Manages a typed Cloudflare Workers Builds production or preview trigger. Requires a user-scoped API token with Workers CI Write.
+Accepted Permissions
+
+- `Workers CI Write`
+
+
+Manages a typed Cloudflare Workers Builds production or preview trigger.
 
 ## Example Usage
 

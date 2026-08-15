@@ -13,8 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-var _ resource.ResourceWithConfigValidators = (*WorkersBuildTokenResource)(nil)
-
 var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 // ResourceSchema returns the Terraform schema for a Workers Builds deployment
@@ -76,10 +74,6 @@ func ResourceSchema(_ context.Context) schema.Schema {
 
 func (r *WorkersBuildTokenResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = ResourceSchema(ctx)
-}
-
-func (r *WorkersBuildTokenResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
-	return nil
 }
 
 // requiresReplaceWhenSecretAlreadyInState permits exactly one non-remote

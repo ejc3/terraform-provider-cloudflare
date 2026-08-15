@@ -78,14 +78,16 @@ func assertRequest(t *testing.T, req *http.Request, method string) {
 	}
 }
 
-func assertPutBody(t *testing.T, req *http.Request, wantSubdomain string) {
+func assertPutBody(t *testing.T, req *http.Request, wantSubdomain string) bool {
 	t.Helper()
 	var body map[string]any
 	if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-		t.Fatalf("decode PUT body: %v", err)
+		t.Errorf("decode PUT body: %v", err)
+		return false
 	}
 	if len(body) != 1 {
-		t.Fatalf("PUT body = %#v, want only the account-wide subdomain", body)
+		t.Errorf("PUT body = %#v, want only the account-wide subdomain", body)
+		return false
 	}
 	if got := body["subdomain"]; got != wantSubdomain {
 		t.Errorf("subdomain = %#v, want %q", got, wantSubdomain)
@@ -96,13 +98,17 @@ func assertPutBody(t *testing.T, req *http.Request, wantSubdomain string) {
 	if _, exists := body["previews_enabled"]; exists {
 		t.Error("account subdomain request must not contain per-script previews_enabled")
 	}
+	return true
 }
 
 func TestWorkersSubdomainResourceCreate(t *testing.T) {
 	ctx := context.Background()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		assertRequest(t, req, http.MethodPut)
-		assertPutBody(t, req, "cc-games")
+		if !assertPutBody(t, req, "cc-games") {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
 		writeJSON(t, w, http.StatusOK, workersSubdomainEnvelope("cc-games"))
 	}))
 	defer ts.Close()
@@ -126,7 +132,10 @@ func TestWorkersSubdomainResourceUpdate(t *testing.T) {
 	ctx := context.Background()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		assertRequest(t, req, http.MethodPut)
-		assertPutBody(t, req, "new-label")
+		if !assertPutBody(t, req, "new-label") {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
 		writeJSON(t, w, http.StatusOK, workersSubdomainEnvelope("new-label"))
 	}))
 	defer ts.Close()

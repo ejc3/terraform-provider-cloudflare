@@ -16,8 +16,6 @@ import (
 var numericIDPattern = regexp.MustCompile(`^[0-9]+$`)
 var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
-var _ resource.ResourceWithConfigValidators = (*WorkersBuildRepositoryConnectionResource)(nil)
-
 // ResourceSchema returns the Terraform schema for a Workers Builds repository
 // connection.
 func ResourceSchema(_ context.Context) schema.Schema {
@@ -88,8 +86,4 @@ func ResourceSchema(_ context.Context) schema.Schema {
 
 func (r *WorkersBuildRepositoryConnectionResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = ResourceSchema(ctx)
-}
-
-func (r *WorkersBuildRepositoryConnectionResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
-	return nil
 }

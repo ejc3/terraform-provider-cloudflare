@@ -52,8 +52,8 @@ func TestWorkersBuildTriggerEnvironmentVariablesSchemaSemantics(t *testing.T) {
 		t.Fatalf("variables must be a required sensitive map: %#v", variables)
 	}
 	value := variables.NestedObject.Attributes["value"].(schema.StringAttribute)
-	if !value.Optional || value.Required || value.Computed || !value.Sensitive {
-		t.Fatalf("variables.value must be optional and sensitive for import reconciliation: %#v", value)
+	if !value.Required || value.Optional || value.Computed || !value.Sensitive {
+		t.Fatalf("variables.value must be required in configuration and sensitive: %#v", value)
 	}
 	isSecret := variables.NestedObject.Attributes["is_secret"].(schema.BoolAttribute)
 	if !isSecret.Required || isSecret.Optional || isSecret.Computed {

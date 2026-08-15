@@ -69,7 +69,7 @@ type triggerListEnvelope struct {
 	Result     []triggerAPIModel `json:"result"`
 	Success    bool              `json:"success"`
 	Errors     []apiError        `json:"errors"`
-	ResultInfo struct {
+	ResultInfo *struct {
 		Page       int `json:"page"`
 		TotalPages int `json:"total_pages"`
 	} `json:"result_info"`

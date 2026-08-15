@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,8 +18,10 @@ var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 func ResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		Version:             500,
-		MarkdownDescription: "Manages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads. Requires a user-scoped token with Workers CI Read and Write.",
+		Version: 500,
+		MarkdownDescription: schemata.Description{
+			Scopes: []string{"Workers CI Read", "Workers CI Write"},
+		}.String() + "\n\nManages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "Trigger UUID.",
@@ -44,7 +47,7 @@ func ResourceSchema(_ context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 					"value": schema.StringAttribute{
 						Description: "Variable value. It may be null immediately after import for a redacted secret and must then be provided in configuration.",
-						Optional:    true,
+						Required:    true,
 						Sensitive:   true,
 					},
 					"is_secret": schema.BoolAttribute{

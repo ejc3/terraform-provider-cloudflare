@@ -73,7 +73,7 @@ func TestRequestFromModel(t *testing.T) {
 
 func TestUpdateRequestOmitsImmutableFields(t *testing.T) {
 	ctx := context.Background()
-	empty, _ := types.SetValueFrom(ctx, types.StringType, []string{})
+	empty := httpTestStringSet(t)
 	model := WorkersBuildTriggerModel{
 		ExternalScriptID:     types.StringValue("72edf31f83e240448fce38bef56104e3"),
 		RepositoryConnection: types.StringValue("11111111-1111-4111-8111-111111111111"),
@@ -305,7 +305,9 @@ func TestWorkersBuildTriggerReadFindsTriggerOnLaterPage(t *testing.T) {
 		case "2":
 			httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+httpTestTriggerResult("from-page-two")+`],"result_info":{"page":2,"total_pages":2}}`)
 		default:
-			t.Fatalf("unexpected page %q", req.URL.Query().Get("page"))
+			t.Errorf("unexpected page %q", req.URL.Query().Get("page"))
+			httpTestWriteJSON(t, w, http.StatusBadRequest, `{"success":false,"errors":[{"code":1000,"message":"unexpected page"}]}`)
+			return
 		}
 	}))
 	defer ts.Close()
@@ -320,6 +322,35 @@ func TestWorkersBuildTriggerReadFindsTriggerOnLaterPage(t *testing.T) {
 		t.Fatalf("requests = %d, want 2", requests)
 	}
 	httpTestAssertTriggerState(t, resp.State, "from-page-two")
+}
+
+func TestWorkersBuildTriggerReadPreservesStateWithoutPaginationMetadata(t *testing.T) {
+	ctx := context.Background()
+	for _, test := range []struct {
+		name       string
+		resultInfo string
+	}{
+		{name: "result_info omitted"},
+		{name: "total_pages omitted", resultInfo: `,"result_info":{}`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				other := strings.Replace(httpTestTriggerResult("other"), httpTestTriggerUUID, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", 1)
+				httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+other+`]`+test.resultInfo+`}`)
+			}))
+			defer ts.Close()
+
+			state := httpTestTriggerState(t, httpTestTriggerModel(t, "from-state"))
+			resp := &resource.ReadResponse{State: state}
+			httpTestTriggerResource(t, ts.URL).Read(ctx, resource.ReadRequest{State: state}, resp)
+			if !resp.Diagnostics.HasError() {
+				t.Fatal("missing pagination metadata must be an error when the managed trigger was not found")
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatal("ambiguous pagination response must preserve Terraform state")
+			}
+		})
+	}
 }
 
 func TestWorkersBuildTriggerUpdateHTTPMapping(t *testing.T) {
@@ -341,7 +372,7 @@ func TestWorkersBuildTriggerUpdateHTTPMapping(t *testing.T) {
 		}
 		// PATCH fields are optional in Cloudflare's response schema. A partial
 		// response must not erase immutable identity or other planned values.
-		httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{"trigger_name":"updated"}}`)
+		httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{"trigger_name":"updated","modified_on":"2026-08-15T00:02:00Z"}}`)
 	}))
 	defer ts.Close()
 
@@ -360,7 +391,7 @@ func TestWorkersBuildTriggerUpdateHTTPMapping(t *testing.T) {
 	if diags := resp.State.Get(ctx, &got); diags.HasError() {
 		t.Fatalf("get updated state: %v", diags)
 	}
-	if got.CreatedOn.ValueString() != "2026-08-15T00:00:00Z" || got.ModifiedOn.ValueString() != "2026-08-15T00:01:00Z" {
+	if got.CreatedOn.ValueString() != "2026-08-15T00:00:00Z" || got.ModifiedOn.ValueString() != "2026-08-15T00:02:00Z" {
 		t.Fatalf("partial update response erased timestamps: created=%q modified=%q", got.CreatedOn.ValueString(), got.ModifiedOn.ValueString())
 	}
 }

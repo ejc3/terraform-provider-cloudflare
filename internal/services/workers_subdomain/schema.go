@@ -2,6 +2,7 @@ package workers_subdomain
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -11,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
+
+var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 func ResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -33,7 +36,7 @@ func ResourceSchema(_ context.Context) schema.Schema {
 				Description: "Identifier of the Cloudflare account.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 32),
+					stringvalidator.RegexMatches(accountIDPattern, "must be a 32-character hexadecimal account identifier"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

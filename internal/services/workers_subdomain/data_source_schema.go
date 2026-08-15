@@ -20,7 +20,7 @@ func DataSourceSchema(_ context.Context) schema.Schema {
 				Description: "Identifier of the Cloudflare account.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 32),
+					stringvalidator.RegexMatches(accountIDPattern, "must be a 32-character hexadecimal account identifier"),
 				},
 			},
 			"subdomain": schema.StringAttribute{

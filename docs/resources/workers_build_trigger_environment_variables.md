@@ -2,12 +2,20 @@
 page_title: "cloudflare_workers_build_trigger_environment_variables Resource - Cloudflare"
 subcategory: ""
 description: |-
-  Manages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads. Requires a user-scoped token with Workers CI Read and Write.
+  Accepted Permissions
+  Workers CI ReadWorkers CI Write
+  Manages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads.
 ---
 
 # cloudflare_workers_build_trigger_environment_variables (Resource)
 
-Manages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads. Requires a user-scoped token with Workers CI Read and Write.
+Accepted Permissions
+
+- `Workers CI Read`
+- `Workers CI Write`
+
+
+Manages the complete set of build-time environment variables for a Workers Builds trigger. Secret values remain in sensitive Terraform state because Cloudflare redacts them on reads.
 
 ## Example Usage
 
@@ -64,9 +72,6 @@ resource "cloudflare_workers_build_trigger_environment_variables" "preview" {
 Required:
 
 - `is_secret` (Boolean) Whether Cloudflare masks this value in build logs and subsequent API reads.
-
-Optional:
-
 - `value` (String, Sensitive) Variable value. It may be null immediately after import for a redacted secret and must then be provided in configuration.
 
 ## Import

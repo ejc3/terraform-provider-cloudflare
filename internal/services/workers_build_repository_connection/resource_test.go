@@ -82,7 +82,9 @@ func TestRepositoryConnectionCreateMapsRequestAndResponse(t *testing.T) {
 		}
 		var body map[string]string
 		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
 		}
 		want := map[string]string{
 			"provider_type":         "github",

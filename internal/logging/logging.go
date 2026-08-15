@@ -79,14 +79,11 @@ func logRequest(ctx context.Context, req *http.Request, sensitiveJSONFields map[
 	}
 
 	if req.Body != nil {
-		// Read the body without mutating the original response
-		bodyBytes, err := io.ReadAll(req.Body)
+		bodyBytes, replacement, err := readAndReplaceBody(req.Body)
 		if err != nil {
 			return err
 		}
-
-		// Restore the original body to the response so it can be read again
-		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		req.Body = replacement
 
 		// Log a sanitized copy of the body. The original bytes remain on req.
 		lines = append(lines, ">\n", string(redactJSONBody(bodyBytes, sensitiveJSONFields)), "\n")
@@ -117,14 +114,11 @@ func logResponse(ctx context.Context, resp *http.Response, sensitiveJSONFields m
 	}
 
 	if resp.Body != nil {
-		// Read the body without mutating the original response
-		bodyBytes, err := io.ReadAll(resp.Body)
+		bodyBytes, replacement, err := readAndReplaceBody(resp.Body)
 		if err != nil {
 			return err
 		}
-
-		// Restore the original body to the response so it can be read again
-		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		resp.Body = replacement
 
 		lines = append(lines, "<\n", string(redactJSONBody(bodyBytes, sensitiveJSONFields)), "\n")
 	}
@@ -133,6 +127,15 @@ func logResponse(ctx context.Context, resp *http.Response, sensitiveJSONFields m
 	tflog.Debug(ctx, strings.Join(lines, "\n"))
 
 	return nil
+}
+
+func readAndReplaceBody(original io.ReadCloser) ([]byte, io.ReadCloser, error) {
+	bodyBytes, readErr := io.ReadAll(original)
+	_ = original.Close()
+	if readErr != nil {
+		return nil, nil, readErr
+	}
+	return bodyBytes, io.NopCloser(bytes.NewReader(bodyBytes)), nil
 }
 
 func redactJSONBody(body []byte, sensitiveJSONFields map[string]struct{}) []byte {

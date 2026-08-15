@@ -3,6 +3,7 @@ package logging_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -25,17 +26,24 @@ func TestRedactingMiddlewareRedactsSensitiveJSONAndHeaders(t *testing.T) {
 
 	var logs bytes.Buffer
 	ctx := tflogtest.RootLogger(context.Background(), &logs)
-	req := httptest.NewRequest(http.MethodPost, "https://api.cloudflare.test/user/tokens", strings.NewReader(requestBody))
+	req := httptest.NewRequest(http.MethodPost, "https://api.cloudflare.test/user/tokens", nil)
+	requestBodyReader := &trackingReadCloser{Reader: strings.NewReader(requestBody)}
+	req.Body = requestBodyReader
 	req.Header.Set("Authorization", requestAuthorization)
 
 	var receivedRequestBody string
+	var responseBodyReader *trackingReadCloser
 	resp, err := providerlogging.RedactingMiddleware(ctx, "value")(req, func(req *http.Request) (*http.Response, error) {
+		if !requestBodyReader.closed {
+			t.Error("original request body was not closed before the transport ran")
+		}
 		body, readErr := io.ReadAll(req.Body)
 		if readErr != nil {
 			return nil, readErr
 		}
 		receivedRequestBody = string(body)
 
+		responseBodyReader = &trackingReadCloser{Reader: strings.NewReader(responseBody)}
 		return &http.Response{
 			StatusCode: http.StatusCreated,
 			Status:     "201 Created",
@@ -44,7 +52,7 @@ func TestRedactingMiddlewareRedactsSensitiveJSONAndHeaders(t *testing.T) {
 				"Authorization": []string{responseAuthorization},
 				"Content-Type":  []string{"application/json"},
 			},
-			Body: io.NopCloser(strings.NewReader(responseBody)),
+			Body: responseBodyReader,
 		}, nil
 	})
 	if err != nil {
@@ -60,6 +68,9 @@ func TestRedactingMiddlewareRedactsSensitiveJSONAndHeaders(t *testing.T) {
 	}
 	if string(returnedResponseBody) != responseBody {
 		t.Fatalf("response body changed before decoding: got %q, want %q", returnedResponseBody, responseBody)
+	}
+	if !requestBodyReader.closed || responseBodyReader == nil || !responseBodyReader.closed {
+		t.Fatalf("original bodies were not closed: request=%t response=%v", requestBodyReader.closed, responseBodyReader)
 	}
 
 	logOutput := logs.String()
@@ -138,4 +149,46 @@ func TestRedactingMiddlewareOmitsMalformedJSONBodies(t *testing.T) {
 	if count := strings.Count(logOutput, "[body omitted: invalid JSON]"); count != 2 {
 		t.Errorf("log output contains %d malformed-body markers, want 2: %s", count, logOutput)
 	}
+}
+
+func TestLoggingClosesBodyWhenReadFails(t *testing.T) {
+	t.Parallel()
+
+	requestBody := &failingReadCloser{}
+	req := httptest.NewRequest(http.MethodPost, "https://api.cloudflare.test/test", nil)
+	req.Body = requestBody
+	if err := providerlogging.LogRequest(context.Background(), req); err == nil {
+		t.Fatal("request read failure must be returned")
+	}
+	if !requestBody.closed {
+		t.Fatal("request body was not closed after a read failure")
+	}
+
+	responseBody := &failingReadCloser{}
+	resp := &http.Response{Body: responseBody, Header: make(http.Header)}
+	if err := providerlogging.LogResponse(context.Background(), resp); err == nil {
+		t.Fatal("response read failure must be returned")
+	}
+	if !responseBody.closed {
+		t.Fatal("response body was not closed after a read failure")
+	}
+}
+
+type trackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (body *trackingReadCloser) Close() error {
+	body.closed = true
+	return nil
+}
+
+type failingReadCloser struct{ closed bool }
+
+func (*failingReadCloser) Read([]byte) (int, error) { return 0, errors.New("read failed") }
+
+func (body *failingReadCloser) Close() error {
+	body.closed = true
+	return nil
 }

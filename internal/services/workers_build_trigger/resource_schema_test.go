@@ -66,6 +66,9 @@ func TestWorkersBuildTriggerSchemaSemantics(t *testing.T) {
 			t.Errorf("%s must be computed only: %#v", name, attribute)
 		}
 	}
+	if modifiers := resourceSchema.Attributes["modified_on"].(schema.StringAttribute).PlanModifiers; len(modifiers) != 0 {
+		t.Fatalf("modified_on must remain unknown during updates, got %d plan modifiers", len(modifiers))
+	}
 
 	assertTriggerInvalidString(t, resourceSchema, "account_id", "short")
 	assertTriggerInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")

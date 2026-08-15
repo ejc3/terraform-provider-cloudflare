@@ -71,6 +71,8 @@ func TestWorkersSubdomainSchemaSemantics(t *testing.T) {
 	}
 	assertInvalidString(t, accountID.Validators, "")
 	assertInvalidString(t, accountID.Validators, strings.Repeat("a", 33))
+	assertInvalidString(t, accountID.Validators, strings.Repeat("g", 32))
+	assertValidString(t, accountID.Validators, testAccountID)
 
 	subdomain, ok := schema.Attributes["subdomain"].(resourceschema.StringAttribute)
 	if !ok {
@@ -96,6 +98,8 @@ func TestWorkersSubdomainDataSourceSchemaSemantics(t *testing.T) {
 	}
 	assertInvalidString(t, accountID.Validators, "")
 	assertInvalidString(t, accountID.Validators, strings.Repeat("a", 33))
+	assertInvalidString(t, accountID.Validators, strings.Repeat("g", 32))
+	assertValidString(t, accountID.Validators, testAccountID)
 	subdomain := schema.Attributes["subdomain"].(datasourceschema.StringAttribute)
 	if !subdomain.Computed || subdomain.Optional || subdomain.Required {
 		t.Fatalf("data source subdomain must be computed only: %#v", subdomain)
@@ -119,6 +123,24 @@ func assertInvalidString(t *testing.T, validators []validator.String, value stri
 		}
 	}
 	t.Fatalf("value %q unexpectedly passed validation", value)
+}
+
+func assertValidString(t *testing.T, validators []validator.String, value string) {
+	t.Helper()
+	if len(validators) == 0 {
+		t.Fatal("expected at least one string validator")
+	}
+	for _, configuredValidator := range validators {
+		resp := &validator.StringResponse{}
+		configuredValidator.ValidateString(
+			context.Background(),
+			validator.StringRequest{ConfigValue: types.StringValue(value)},
+			resp,
+		)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("value %q unexpectedly failed validation: %v", value, resp.Diagnostics)
+		}
+	}
 }
 
 func TestAccountLabelAndPerScriptSwitchesRemainIndependent(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -19,8 +20,10 @@ var workerTagPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 func ResourceSchema(_ context.Context) schema.Schema {
 	uuidValidators := []validator.String{stringvalidator.RegexMatches(uuidPattern, "must be a UUID")}
 	return schema.Schema{
-		Version:             500,
-		MarkdownDescription: "Manages a typed Cloudflare Workers Builds production or preview trigger. Requires a user-scoped API token with Workers CI Write.",
+		Version: 500,
+		MarkdownDescription: schemata.Description{
+			Scopes: []string{"Workers CI Write"},
+		}.String() + "\n\nManages a typed Cloudflare Workers Builds production or preview trigger.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "Trigger UUID.",
@@ -80,9 +83,8 @@ func ResourceSchema(_ context.Context) schema.Schema {
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"modified_on": schema.StringAttribute{
-				Description:   "Last modification timestamp reported by Cloudflare.",
-				Computed:      true,
-				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				Description: "Last modification timestamp reported by Cloudflare.",
+				Computed:    true,
 			},
 		},
 	}

@@ -1,8 +1,8 @@
-resource "cloudflare_workers_build_repository_connection" "colton_games" {
-  account_id            = "12ea67fb7ced068de03f35c22688e436"
+resource "cloudflare_workers_build_repository_connection" "example" {
+  account_id            = "023e105f4ecef8ad9ca31a8372d0c353"
   provider_type         = "github"
-  provider_account_id   = "250920182"
-  provider_account_name = "CoderColton"
-  repo_id               = "1120877379"
-  repo_name             = "colton-games"
+  provider_account_id   = "123456789"
+  provider_account_name = "example-org"
+  repo_id               = "987654321"
+  repo_name             = "example-worker"
 }

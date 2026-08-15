@@ -115,15 +115,6 @@ func stringPointer(value string) *string {
 	return &value
 }
 
-func TestRemovedVariableNamesSorted(t *testing.T) {
-	previous := map[string]EnvironmentVariableModel{"Z": {}, "A": {}, "KEEP": {}}
-	desired := map[string]EnvironmentVariableModel{"KEEP": {}}
-	got := removedVariableNames(previous, desired)
-	if len(got) != 2 || got[0] != "A" || got[1] != "Z" {
-		t.Fatalf("unexpected removed names: %#v", got)
-	}
-}
-
 func TestEnvironmentVariablesResponseEnvelope(t *testing.T) {
 	payload := []byte(`{"success":true,"result":{"API_KEY":{"created_on":"2026-08-15T00:00:00Z","is_secret":true,"value":null},"NODE_ENV":{"created_on":"2026-08-15T00:00:00Z","is_secret":false,"value":"production"}}}`)
 	var envelope environmentVariablesEnvelope
@@ -236,23 +227,31 @@ func envHTTPTestDecodeVariables(t *testing.T, value types.Map) map[string]Enviro
 func TestWorkersBuildTriggerEnvironmentVariablesCreatePatchMapping(t *testing.T) {
 	ctx := context.Background()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPatch || req.URL.EscapedPath() != envHTTPTestPath() {
+		if req.URL.EscapedPath() != envHTTPTestPath() {
 			t.Errorf("unexpected request: %s %s", req.Method, req.URL.EscapedPath())
 		}
-		var body map[string]struct {
-			Value    *string `json:"value"`
-			IsSecret bool    `json:"is_secret"`
+		switch req.Method {
+		case http.MethodPatch:
+			var body map[string]struct {
+				Value    *string `json:"value"`
+				IsSecret bool    `json:"is_secret"`
+			}
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+				t.Errorf("decode PATCH body: %v", err)
+			}
+			if body["API_KEY"].Value == nil || *body["API_KEY"].Value != envHTTPTestSecret || !body["API_KEY"].IsSecret {
+				t.Errorf("secret variable was not mapped correctly: %#v", body["API_KEY"])
+			}
+			if body["NODE_ENV"].Value == nil || *body["NODE_ENV"].Value != "production" || body["NODE_ENV"].IsSecret {
+				t.Errorf("plain variable was not mapped correctly: %#v", body["NODE_ENV"])
+			}
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{}}`)
+		case http.MethodGet:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, envHTTPTestEnvelope())
+		default:
+			t.Errorf("unexpected method %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
 		}
-		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
-			t.Errorf("decode PATCH body: %v", err)
-		}
-		if body["API_KEY"].Value == nil || *body["API_KEY"].Value != envHTTPTestSecret || !body["API_KEY"].IsSecret {
-			t.Errorf("secret variable was not mapped correctly: %#v", body["API_KEY"])
-		}
-		if body["NODE_ENV"].Value == nil || *body["NODE_ENV"].Value != "production" || body["NODE_ENV"].IsSecret {
-			t.Errorf("plain variable was not mapped correctly: %#v", body["NODE_ENV"])
-		}
-		envHTTPTestWriteJSON(t, w, http.StatusOK, envHTTPTestEnvelope())
 	}))
 	defer ts.Close()
 
@@ -280,6 +279,10 @@ func TestWorkersBuildTriggerEnvironmentVariablesCreateDeletesUnexpectedRemoteVar
 		methodsAndPaths = append(methodsAndPaths, req.Method+" "+req.URL.EscapedPath())
 		switch req.Method {
 		case http.MethodPatch:
+			// PATCH responses may be partial and are not authoritative for
+			// complete-map ownership.
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{"NODE_ENV":{"is_secret":false,"value":"production"}}}`)
+		case http.MethodGet:
 			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
 				`"NODE_ENV":{"is_secret":false,"value":"production"},`+
 				`"Z_EXTRA":{"is_secret":false,"value":"z"},`+
@@ -289,6 +292,8 @@ func TestWorkersBuildTriggerEnvironmentVariablesCreateDeletesUnexpectedRemoteVar
 			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[]}`)
 		default:
 			t.Errorf("unexpected method %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+			return
 		}
 	}))
 	defer ts.Close()
@@ -304,6 +309,7 @@ func TestWorkersBuildTriggerEnvironmentVariablesCreateDeletesUnexpectedRemoteVar
 	}
 	want := []string{
 		http.MethodPatch + " " + envHTTPTestPath(),
+		http.MethodGet + " " + envHTTPTestPath(),
 		http.MethodDelete + " " + envHTTPTestPath() + "/A_EXTRA",
 		http.MethodDelete + " " + envHTTPTestPath() + "/Z_EXTRA",
 	}
@@ -368,18 +374,12 @@ func TestWorkersBuildTriggerEnvironmentVariablesReadIncludesRemoteDrift(t *testi
 	}
 }
 
-func TestWorkersBuildTriggerEnvironmentVariablesUpdateDeletesRemovedThenPatches(t *testing.T) {
+func TestWorkersBuildTriggerEnvironmentVariablesUpdatePrunesAuthoritativeRemoteMapAfterPatch(t *testing.T) {
 	ctx := context.Background()
 	var methods []string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		methods = append(methods, req.Method)
 		switch req.Method {
-		case http.MethodDelete:
-			want := envHTTPTestPath() + "/OLD%20KEY"
-			if req.URL.EscapedPath() != want {
-				t.Errorf("DELETE path = %q, want %q", req.URL.EscapedPath(), want)
-			}
-			envHTTPTestWriteJSON(t, w, http.StatusNotFound, `{"success":false,"errors":[{"code":1000,"message":"already absent"}]}`)
 		case http.MethodPatch:
 			if req.URL.EscapedPath() != envHTTPTestPath() {
 				t.Errorf("PATCH path = %q", req.URL.EscapedPath())
@@ -391,16 +391,28 @@ func TestWorkersBuildTriggerEnvironmentVariablesUpdateDeletesRemovedThenPatches(
 			if _, exists := body["OLD KEY"]; exists || len(body) != 1 {
 				t.Errorf("PATCH must own only desired variables: %#v", body)
 			}
-			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{"API_KEY":{"is_secret":true,"value":null}}}`)
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{}}`)
+		case http.MethodGet:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
+				`"API_KEY":{"is_secret":true,"value":null},`+
+				`"OLD KEY":{"is_secret":false,"value":"remote-only"}`+
+				`}}`)
+		case http.MethodDelete:
+			want := envHTTPTestPath() + "/OLD%20KEY"
+			if req.URL.EscapedPath() != want {
+				t.Errorf("DELETE path = %q, want %q", req.URL.EscapedPath(), want)
+			}
+			envHTTPTestWriteJSON(t, w, http.StatusNotFound, `{"success":false,"errors":[{"code":1000,"message":"already absent"}]}`)
 		default:
 			t.Errorf("unexpected method %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+			return
 		}
 	}))
 	defer ts.Close()
 
 	state := envHTTPTestState(t, envHTTPTestModel(t, map[string]EnvironmentVariableModel{
 		"API_KEY": {Value: types.StringValue("old-secret"), IsSecret: types.BoolValue(true)},
-		"OLD KEY": {Value: types.StringValue("remove"), IsSecret: types.BoolValue(false)},
 	}))
 	plan := envHTTPTestPlan(t, envHTTPTestModel(t, map[string]EnvironmentVariableModel{
 		"API_KEY": {Value: types.StringValue(envHTTPTestSecret), IsSecret: types.BoolValue(true)},
@@ -410,11 +422,11 @@ func TestWorkersBuildTriggerEnvironmentVariablesUpdateDeletesRemovedThenPatches(
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("update diagnostics: %v", resp.Diagnostics)
 	}
-	if len(methods) != 2 || methods[0] != http.MethodDelete || methods[1] != http.MethodPatch {
-		t.Fatalf("request order = %#v, want DELETE then PATCH", methods)
+	if len(methods) != 3 || methods[0] != http.MethodPatch || methods[1] != http.MethodGet || methods[2] != http.MethodDelete {
+		t.Fatalf("request order = %#v, want PATCH then GET then DELETE", methods)
 	}
 	variables := envHTTPTestDecodeVariables(t, envHTTPTestDecodeState(t, resp.State).Variables)
-	if variables["API_KEY"].Value.ValueString() != envHTTPTestSecret {
+	if len(variables) != 1 || variables["API_KEY"].Value.ValueString() != envHTTPTestSecret {
 		t.Fatalf("update did not preserve desired secret: %#v", variables)
 	}
 }

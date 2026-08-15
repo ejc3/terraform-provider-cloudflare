@@ -51,9 +51,13 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Create(ctx context.Con
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	apiVariables, err := r.upsert(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables)
-	if err != nil {
+	if err := r.upsert(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables); err != nil {
 		resp.Diagnostics.AddError("failed to create Workers Builds environment variables", err.Error())
+		return
+	}
+	apiVariables, _, err := r.list(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to verify Workers Builds environment variables after create", err.Error())
 		return
 	}
 	if err := r.deleteUnexpected(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables, apiVariables); err != nil {
@@ -91,28 +95,20 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Read(ctx context.Conte
 }
 
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state WorkersBuildTriggerEnvironmentVariablesModel
+	var plan WorkersBuildTriggerEnvironmentVariablesModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	desired, diags := variablesFromTerraform(ctx, plan.Variables)
 	resp.Diagnostics.Append(diags...)
-	previous, diags := variablesFromTerraform(ctx, state.Variables)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	if err := r.upsert(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired); err != nil {
+		resp.Diagnostics.AddError("failed to update Workers Builds environment variables", err.Error())
 		return
 	}
-	for _, name := range removedVariableNames(previous, desired) {
-		if err := r.deleteOne(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), name); err != nil {
-			resp.Diagnostics.AddError("failed to delete removed Workers Builds environment variable", err.Error())
-			return
-		}
-	}
-	apiVariables, err := r.upsert(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired)
+	apiVariables, _, err := r.list(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("failed to update Workers Builds environment variables", err.Error())
+		resp.Diagnostics.AddError("failed to verify Workers Builds environment variables after update", err.Error())
 		return
 	}
 	if err := r.deleteUnexpected(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired, apiVariables); err != nil {
@@ -181,7 +177,7 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) list(ctx context.Conte
 	return env.Result, status, err
 }
 
-func (r *WorkersBuildTriggerEnvironmentVariablesResource) upsert(ctx context.Context, accountID, triggerUUID string, variables map[string]EnvironmentVariableModel) (map[string]environmentVariableResponse, error) {
+func (r *WorkersBuildTriggerEnvironmentVariablesResource) upsert(ctx context.Context, accountID, triggerUUID string, variables map[string]EnvironmentVariableModel) error {
 	body := make(map[string]environmentVariableRequest, len(variables))
 	for name, variable := range variables {
 		var value *string
@@ -196,7 +192,7 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) upsert(ctx context.Con
 	if err == nil {
 		err = validateEnvelope(env.Success, env.Errors)
 	}
-	return env.Result, err
+	return err
 }
 
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) deleteOne(ctx context.Context, accountID, triggerUUID, name string) error {
@@ -219,6 +215,9 @@ func environmentVariablesPath(accountID, triggerUUID string) string {
 // execute intentionally omits the provider's generic request/response logging
 // middleware because these payloads can contain build secrets.
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) execute(ctx context.Context, method, path string, body any, result any) (int, error) {
+	if result == nil {
+		return 0, fmt.Errorf("response destination is required")
+	}
 	options := make([]option.RequestOption, 0, 1)
 	if body != nil {
 		encoded, err := json.Marshal(body)
@@ -229,6 +228,9 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) execute(ctx context.Co
 	}
 	response := new(http.Response)
 	options = append(options, option.WithResponseInto(&response))
+	// Execute receives result as its non-nil ResponseBodyInto destination, so
+	// cloudflare-go reads and closes the response body before returning.
+	// WithResponseInto separately captures the status-bearing response.
 	err := r.client.Execute(ctx, method, path, nil, result, options...)
 	if response == nil {
 		if err != nil {
@@ -265,17 +267,6 @@ func variablesFromTerraform(ctx context.Context, value types.Map) (map[string]En
 	}
 	diagnostics := value.ElementsAs(ctx, &result, false)
 	return result, diagnostics
-}
-
-func removedVariableNames(previous, desired map[string]EnvironmentVariableModel) []string {
-	var names []string
-	for name := range previous {
-		if _, exists := desired[name]; !exists {
-			names = append(names, name)
-		}
-	}
-	sort.Strings(names)
-	return names
 }
 
 func unexpectedRemoteVariableNames(api map[string]environmentVariableResponse, desired map[string]EnvironmentVariableModel) []string {

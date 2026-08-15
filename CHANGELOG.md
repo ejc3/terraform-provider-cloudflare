@@ -1,5 +1,29 @@
 # Changelog
 
+## 5.24.0 (2026-08-15)
+
+Full Changelog: [v5.23.1...v5.24.0](https://github.com/ejc3/terraform-provider-cloudflare/compare/v5.23.1...v5.24.0)
+
+### New Data Sources
+
+* **cloudflare_workers_subdomain:** read the account-wide `workers.dev` label.
+
+### New Resources
+
+* **cloudflare_workers_subdomain:** manage the account-wide `workers.dev` label independently from per-Worker URL switches.
+* **cloudflare_workers_build_repository_connection:** connect a Git repository to Workers Builds.
+* **cloudflare_workers_build_token:** register a user-owned deployment token without exposing its write-only secret.
+* **cloudflare_workers_build_trigger:** manage typed production and preview build triggers.
+* **cloudflare_workers_build_trigger_environment_variables:** manage a trigger's complete, sensitive environment-variable map.
+
+### Security
+
+* recursively redact API-token values and sensitive headers from provider request and response logs.
+
+### Documentation
+
+* identify the `ejc3/cloudflare` fork source and document the signed, tag-triggered release process.
+
 ## 5.23.0 (2026-07-30)
 
 Full Changelog: [v5.22.0...v5.23.0](https://github.com/cloudflare/terraform-provider-cloudflare/compare/v5.22.0...v5.23.0)

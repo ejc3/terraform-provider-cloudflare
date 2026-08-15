@@ -1,7 +1,9 @@
-# Cloudflare Terraform Provider
+# EJC Cloudflare Terraform Provider Fork
 
-The [Cloudflare Terraform provider](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs) provides convenient access to
-the [Cloudflare REST API](https://developers.cloudflare.com/api) from Terraform.
+The [`ejc3/cloudflare` community provider](https://registry.terraform.io/providers/ejc3/cloudflare/latest/docs) is a focused fork of the
+[official Cloudflare Terraform provider](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs). It provides convenient
+access to the [Cloudflare REST API](https://developers.cloudflare.com/api) and carries the Worker-native Access and Workers Builds support
+needed by the EJC development fleet while those capabilities are not available upstream.
 
 ## Requirements
 
@@ -17,8 +19,8 @@ Add the following to your `main.tf` file:
 terraform {
   required_providers {
     cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 5.21.1"
+      source  = "ejc3/cloudflare"
+      version = "= 5.24.0"
     }
   }
 }
@@ -52,7 +54,7 @@ resource "cloudflare_zone" "example_zone" {
 Initialize your project by running `terraform init` in the directory.
 
 Additional examples can be found in the [./examples](./examples) folder within this repository, and you can
-refer to the full documentation on [the Terraform Registry](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs).
+refer to the full documentation on [the Terraform Registry](https://registry.terraform.io/providers/ejc3/cloudflare/latest/docs).
 
 ### Provider Options
 

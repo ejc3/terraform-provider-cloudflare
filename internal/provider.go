@@ -204,6 +204,10 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/web_analytics_site"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/worker"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/worker_version"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_build_repository_connection"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_build_token"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_build_trigger"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_build_trigger_environment_variables"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_cron_trigger"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_custom_domain"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_deployment"
@@ -213,6 +217,7 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_route"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_script"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_script_subdomain"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workers_subdomain"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/workflow"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/zero_trust_access_ai_controls_mcp_portal"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/services/zero_trust_access_ai_controls_mcp_server"
@@ -540,6 +545,11 @@ func (p *CloudflareProvider) Resources(ctx context.Context) []func() resource.Re
 		web3_hostname.NewResource,
 		worker.NewResource,
 		worker_version.NewResource,
+		workers_build_repository_connection.NewResource,
+		workers_build_token.NewResource,
+		workers_build_trigger.NewResource,
+		workers_build_trigger_environment_variables.NewResource,
+		workers_subdomain.NewResource,
 		workers_route.NewResource,
 		workers_script.NewResource,
 		workers_script_subdomain.NewResource,
@@ -852,6 +862,7 @@ func (p *CloudflareProvider) DataSources(ctx context.Context) []func() datasourc
 		worker.NewWorkersDataSource,
 		worker_version.NewWorkerVersionDataSource,
 		worker_version.NewWorkerVersionsDataSource,
+		workers_subdomain.NewWorkersSubdomainDataSource,
 		workers_route.NewWorkersRouteDataSource,
 		workers_route.NewWorkersRoutesDataSource,
 		workers_script.NewWorkersScriptDataSource,

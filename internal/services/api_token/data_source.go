@@ -93,7 +93,7 @@ func (d *APITokenDataSource) Read(ctx context.Context, req datasource.ReadReques
 		ctx,
 		data.TokenID.ValueString(),
 		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to make http request", err.Error())

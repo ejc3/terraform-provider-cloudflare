@@ -40,9 +40,6 @@ jobs:
         run: |
           ./scripts/link 'github.com/stainless-sdks/cloudflare-go/v7@${{ github.ref_name }}' || true
 
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
       - name: Run lints
         run: ./scripts/lint
 
@@ -51,11 +48,11 @@ jobs:
     needs: lint
     runs-on: ${{ github.repository == 'ejc3/terraform-provider-cloudflare' && 'ubuntu-24.04' || (github.repository == 'stainless-sdks/cloudflare-terraform' && 'depot-ubuntu-24.04' || 'lx64') }}
     if: github.event_name == 'push' || github.event.pull_request.head.repo.fork
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
     steps:
       - uses: actions/checkout@v6
 
@@ -69,13 +66,10 @@ jobs:
         run: |
           ./scripts/link 'github.com/stainless-sdks/cloudflare-go/v7@${{ github.ref_name }}' || true
 
-      - name: Bootstrap
-        run: ./scripts/bootstrap
-
       - name: Run tests
         run: |
           # Get all packages and select this shard (1-indexed)
-          packages=$(go list ./... | awk "NR % 16 == (${{ matrix.shard }} - 1)")
+          packages=$(go list ./... | awk "NR % 32 == (${{ matrix.shard }} - 1)")
           if [ -n "$packages" ]; then
             echo "$packages" | xargs go test -v -timeout 25m
           fi

@@ -570,6 +570,52 @@ func TestWorkersBuildTriggerEnvironmentVariablesUpdatePrunesAuthoritativeRemoteM
 	}
 }
 
+func TestWorkersBuildTriggerEnvironmentVariablesUpdateRetainsVerifiedStateWhenCleanupFails(t *testing.T) {
+	ctx := context.Background()
+	var methods []string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		methods = append(methods, req.Method)
+		switch req.Method {
+		case http.MethodPatch:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{}}`)
+		case http.MethodGet:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
+				`"API_KEY":{"is_secret":true,"value":null},`+
+				`"EXTRA":{"is_secret":false,"value":"remote-only"}`+
+				`}}`)
+		case http.MethodDelete:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":false,"errors":[{"code":9109,"message":"rejected `+envHTTPTestSecret+`"}]}`)
+		default:
+			t.Errorf("unexpected method %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+		}
+	}))
+	defer ts.Close()
+
+	state := envHTTPTestState(t, envHTTPTestModel(t, map[string]EnvironmentVariableModel{
+		"API_KEY": {Value: types.StringValue("old-secret"), IsSecret: types.BoolValue(true)},
+	}))
+	plan := envHTTPTestPlan(t, envHTTPTestModel(t, map[string]EnvironmentVariableModel{
+		"API_KEY": {Value: types.StringValue(envHTTPTestSecret), IsSecret: types.BoolValue(true)},
+	}))
+	resp := &resource.UpdateResponse{State: state}
+	envHTTPTestResource(t, ts.URL).Update(ctx, resource.UpdateRequest{State: state, Plan: plan}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("cleanup failure must produce an error diagnostic")
+	}
+	if strings.Contains(fmt.Sprint(resp.Diagnostics), envHTTPTestSecret) {
+		t.Fatalf("cleanup diagnostic leaked secret: %v", resp.Diagnostics)
+	}
+	if fmt.Sprint(methods) != fmt.Sprint([]string{http.MethodPatch, http.MethodGet, http.MethodDelete}) {
+		t.Fatalf("request order = %#v, want PATCH then GET then DELETE", methods)
+	}
+	got := envHTTPTestDecodeState(t, resp.State)
+	variables := envHTTPTestDecodeVariables(t, got.Variables)
+	if got.ID.ValueString() != envHTTPTestTriggerUUID || len(variables) != 1 || variables["API_KEY"].Value.ValueString() != envHTTPTestSecret {
+		t.Fatalf("cleanup failure lost verified updated state: id=%q variables=%#v", got.ID.ValueString(), variables)
+	}
+}
+
 func TestWorkersBuildTriggerEnvironmentVariablesUpdateRejectsMissingDesiredVariableAfterGET(t *testing.T) {
 	ctx := context.Background()
 	var methods []string

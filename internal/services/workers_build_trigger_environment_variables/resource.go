@@ -128,11 +128,14 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Update(ctx context.Con
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if err := r.deleteUnexpected(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired, apiVariables); err != nil {
 		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

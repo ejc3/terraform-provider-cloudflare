@@ -3,6 +3,7 @@ package logging_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -88,6 +89,65 @@ func TestRedactingMiddlewareRedactsSensitiveJSONAndHeaders(t *testing.T) {
 	for _, visible := range []string{"visible-request", "visible-response", "[redacted]"} {
 		if !strings.Contains(logOutput, visible) {
 			t.Errorf("log output does not retain %q: %s", visible, logOutput)
+		}
+	}
+}
+
+func TestRedactingMiddlewareRedactsSensitiveHeadersCaseInsensitively(t *testing.T) {
+	t.Parallel()
+
+	const (
+		requestCookie             = "session=request-cookie-secret"
+		requestProxyAuthorization = "Basic request-proxy-authorization-secret"
+		responseCookie            = "session=response-cookie-secret; Secure; HttpOnly"
+	)
+
+	var logs bytes.Buffer
+	ctx := tflogtest.RootLogger(context.Background(), &logs)
+	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.test/test", nil)
+	req.Header["cOoKiE"] = []string{requestCookie}
+	req.Header["pRoXy-AuThOrIzAtIoN"] = []string{requestProxyAuthorization}
+
+	_, err := providerlogging.RedactingMiddleware(ctx)(req, func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Proto:      "HTTP/1.1",
+			Header: http.Header{
+				"sEt-CoOkIe": []string{responseCookie},
+			},
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("middleware returned an error: %v", err)
+	}
+
+	logOutput := logs.String()
+	for _, secret := range []string{requestCookie, requestProxyAuthorization, responseCookie} {
+		if strings.Contains(logOutput, secret) {
+			t.Errorf("log output contains secret %q: %s", secret, logOutput)
+		}
+	}
+	var decodedMessages strings.Builder
+	decoder := json.NewDecoder(strings.NewReader(logOutput))
+	for {
+		var entry struct {
+			Message string `json:"@message"`
+		}
+		if err := decoder.Decode(&entry); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			t.Fatalf("decode log entry: %v", err)
+		}
+		decodedMessages.WriteString(entry.Message)
+	}
+	for _, header := range []string{
+		"> cookie: [redacted]",
+		"> proxy-authorization: [redacted]",
+		"< set-cookie: [redacted]",
+	} {
+		if !strings.Contains(decodedMessages.String(), header) {
+			t.Errorf("log output does not contain redacted header %q: %s", header, logOutput)
 		}
 	}
 }

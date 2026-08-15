@@ -17,7 +17,15 @@ import (
 
 const redactedValue = "[redacted]"
 
-var sensitiveHeaderNames = []string{"x-auth-email", "x-auth-key", "x-auth-user-service-key", "authorization"}
+var sensitiveHeaderNames = []string{
+	"authorization",
+	"cookie",
+	"proxy-authorization",
+	"set-cookie",
+	"x-auth-email",
+	"x-auth-key",
+	"x-auth-user-service-key",
+}
 
 func Middleware(ctx context.Context) option.Middleware {
 	return middleware(ctx, nil)

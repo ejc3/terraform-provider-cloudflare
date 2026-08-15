@@ -65,11 +65,14 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Create(ctx context.Con
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if err := r.deleteUnexpected(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables, apiVariables); err != nil {
 		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -94,6 +97,9 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Read(ctx context.Conte
 	}
 	data.ID = data.TriggerUUID
 	resp.Diagnostics.Append(mergeAPIState(ctx, &data, prior, apiVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -177,7 +183,25 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) ImportState(ctx contex
 		TriggerUUID: types.StringValue(triggerUUID),
 	}
 	resp.Diagnostics.Append(mergeAPIState(ctx, &data, nil, apiVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	redactedSecrets := 0
+	for _, variable := range apiVariables {
+		if variable.IsSecret && variable.Value == nil {
+			redactedSecrets++
+		}
+	}
+	if redactedSecrets != 0 {
+		resp.Diagnostics.AddWarning(
+			"Workers Builds secret environment variables must be reconciled",
+			fmt.Sprintf("Cloudflare does not return secret environment-variable values. This import recorded %d redacted value(s) as null in Terraform state. Add the exact existing values to configuration before applying; Terraform cannot verify them, and different values will overwrite the remote secrets.", redactedSecrets),
+		)
+	}
 }
 
 func (r *WorkersBuildTriggerEnvironmentVariablesResource) list(ctx context.Context, accountID, triggerUUID string) (map[string]environmentVariableResponse, int, error) {

@@ -380,6 +380,50 @@ func TestWorkersBuildTriggerEnvironmentVariablesCreateDeletesUnexpectedRemoteVar
 	}
 }
 
+func TestWorkersBuildTriggerEnvironmentVariablesCreateRetainsVerifiedStateWhenCleanupFails(t *testing.T) {
+	ctx := context.Background()
+	var methods []string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		methods = append(methods, req.Method)
+		switch req.Method {
+		case http.MethodPatch:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{}}`)
+		case http.MethodGet:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
+				`"API_KEY":{"is_secret":true,"value":null},`+
+				`"EXTRA":{"is_secret":false,"value":"remote-only"}`+
+				`}}`)
+		case http.MethodDelete:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":false,"errors":[{"code":9109,"message":"rejected `+envHTTPTestSecret+`"}]}`)
+		default:
+			t.Errorf("unexpected method %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+		}
+	}))
+	defer ts.Close()
+
+	model := envHTTPTestModel(t, map[string]EnvironmentVariableModel{
+		"API_KEY": {Value: types.StringValue(envHTTPTestSecret), IsSecret: types.BoolValue(true)},
+	})
+	model.ID = types.StringNull()
+	resp := &resource.CreateResponse{State: tfsdk.State{Schema: ResourceSchema(ctx)}}
+	envHTTPTestResource(t, ts.URL).Create(ctx, resource.CreateRequest{Plan: envHTTPTestPlan(t, model)}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("cleanup failure must produce an error diagnostic")
+	}
+	if strings.Contains(fmt.Sprint(resp.Diagnostics), envHTTPTestSecret) {
+		t.Fatalf("cleanup diagnostic leaked secret: %v", resp.Diagnostics)
+	}
+	if fmt.Sprint(methods) != fmt.Sprint([]string{http.MethodPatch, http.MethodGet, http.MethodDelete}) {
+		t.Fatalf("request order = %#v, want PATCH then GET then DELETE", methods)
+	}
+	got := envHTTPTestDecodeState(t, resp.State)
+	variables := envHTTPTestDecodeVariables(t, got.Variables)
+	if got.ID.ValueString() != envHTTPTestTriggerUUID || len(variables) != 1 || variables["API_KEY"].Value.ValueString() != envHTTPTestSecret {
+		t.Fatalf("cleanup failure lost verified desired state: id=%q variables=%#v", got.ID.ValueString(), variables)
+	}
+}
+
 func TestWorkersBuildTriggerEnvironmentVariablesCreateRejectsMissingDesiredVariableAfterGET(t *testing.T) {
 	ctx := context.Background()
 	var methods []string
@@ -767,5 +811,12 @@ func TestWorkersBuildTriggerEnvironmentVariablesImportAndReconciliation(t *testi
 	}
 	if variables["NODE_ENV"].Value.ValueString() != "production" {
 		t.Fatalf("imported plain variable was not reconciled: %#v", variables["NODE_ENV"])
+	}
+	diagnosticText := fmt.Sprint(resp.Diagnostics)
+	if !strings.Contains(diagnosticText, "secret environment variables must be reconciled") {
+		t.Fatalf("import omitted the redacted-secret warning: %s", diagnosticText)
+	}
+	if strings.Contains(diagnosticText, envHTTPTestSecret) {
+		t.Fatalf("import warning leaked a secret value: %s", diagnosticText)
 	}
 }

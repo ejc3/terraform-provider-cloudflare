@@ -60,12 +60,15 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Create(ctx context.Con
 		resp.Diagnostics.AddError("failed to verify Workers Builds environment variables after create", err.Error())
 		return
 	}
+	data.ID = data.TriggerUUID
+	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &data, variables, apiVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if err := r.deleteUnexpected(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables, apiVariables); err != nil {
 		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
 		return
 	}
-	data.ID = data.TriggerUUID
-	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &data, variables, apiVariables)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -102,6 +105,9 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Update(ctx context.Con
 	}
 	desired, diags := variablesFromTerraform(ctx, plan.Variables)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if err := r.upsert(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired); err != nil {
 		resp.Diagnostics.AddError("failed to update Workers Builds environment variables", err.Error())
 		return
@@ -111,12 +117,15 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Update(ctx context.Con
 		resp.Diagnostics.AddError("failed to verify Workers Builds environment variables after update", err.Error())
 		return
 	}
+	plan.ID = plan.TriggerUUID
+	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &plan, desired, apiVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if err := r.deleteUnexpected(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired, apiVariables); err != nil {
 		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
 		return
 	}
-	plan.ID = plan.TriggerUUID
-	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &plan, desired, apiVariables)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -126,13 +135,16 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Delete(ctx context.Con
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	variables, diags := variablesFromTerraform(ctx, data.Variables)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	apiVariables, status, err := r.list(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString())
+	if status == http.StatusNotFound {
 		return
 	}
-	names := make([]string, 0, len(variables))
-	for name := range variables {
+	if err != nil {
+		resp.Diagnostics.AddError("failed to read Workers Builds environment variables before delete", err.Error())
+		return
+	}
+	names := make([]string, 0, len(apiVariables))
+	for name := range apiVariables {
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -307,21 +319,42 @@ func mergeAPIState(ctx context.Context, data *WorkersBuildTriggerEnvironmentVari
 }
 
 func mergeDesiredAPIState(ctx context.Context, data *WorkersBuildTriggerEnvironmentVariablesModel, desired map[string]EnvironmentVariableModel, api map[string]environmentVariableResponse) diag.Diagnostics {
-	variables := make(map[string]EnvironmentVariableModel, len(desired))
-	for name, configured := range desired {
+	missing := 0
+	secretKindMismatches := 0
+	missingPlainValues := 0
+	for name := range desired {
 		remote, exists := api[name]
 		if !exists {
-			variables[name] = configured
+			missing++
 			continue
 		}
+		configured := desired[name]
+		if remote.IsSecret != configured.IsSecret.ValueBool() {
+			secretKindMismatches++
+		}
+		if !remote.IsSecret && remote.Value == nil {
+			missingPlainValues++
+		}
+	}
+	if missing != 0 || secretKindMismatches != 0 || missingPlainValues != 0 {
+		var diagnostics diag.Diagnostics
+		diagnostics.AddError(
+			"Workers Builds environment variables failed verification after write",
+			fmt.Sprintf("Cloudflare's authoritative response omitted %d configured variable(s), returned %d secret-kind mismatch(es), and omitted %d non-secret value(s); refusing to record a successful state.", missing, secretKindMismatches, missingPlainValues),
+		)
+		return diagnostics
+	}
+
+	variables := make(map[string]EnvironmentVariableModel, len(desired))
+	for name, configured := range desired {
+		remote := api[name]
 		value := types.StringNull()
 		if remote.Value != nil {
 			value = types.StringValue(*remote.Value)
 		} else if !configured.Value.IsNull() && !configured.Value.IsUnknown() {
-			// PATCH responses can omit a variable value even when they include
-			// the variable itself. Preserve the configured value so a partial
-			// response cannot erase either a plain value or a write-only secret
-			// from the post-apply state.
+			// Cloudflare redacts secret values on reads. Preserve the configured
+			// value when the authoritative response includes the variable but
+			// omits its value.
 			value = configured.Value
 		}
 		variables[name] = EnvironmentVariableModel{Value: value, IsSecret: types.BoolValue(remote.IsSecret)}

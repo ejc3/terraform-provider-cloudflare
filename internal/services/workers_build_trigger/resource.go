@@ -194,9 +194,13 @@ func (r *WorkersBuildTriggerResource) find(ctx context.Context, accountID, exter
 			return false, triggerAPIModel{}, err
 		}
 		for _, trigger := range env.Result {
-			if trigger.TriggerUUID != nil && *trigger.TriggerUUID == triggerUUID && (trigger.DeletedOn == nil || *trigger.DeletedOn == "") {
-				return true, trigger, nil
+			if trigger.TriggerUUID == nil || *trigger.TriggerUUID != triggerUUID {
+				continue
 			}
+			if trigger.DeletedOn != nil && *trigger.DeletedOn != "" {
+				return false, triggerAPIModel{}, nil
+			}
+			return true, trigger, nil
 		}
 		if env.ResultInfo == nil || env.ResultInfo.TotalPages <= 0 {
 			return false, triggerAPIModel{}, fmt.Errorf("Cloudflare omitted pagination metadata before the managed Workers Builds trigger was found")

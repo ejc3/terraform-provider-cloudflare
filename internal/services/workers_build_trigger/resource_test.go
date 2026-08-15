@@ -275,7 +275,8 @@ func TestWorkersBuildTriggerReadUsesWorkerListEndpoint(t *testing.T) {
 		if req.Method != http.MethodGet || req.URL.EscapedPath() != wantPath {
 			t.Errorf("unexpected request: %s %s, want GET %s", req.Method, req.URL.EscapedPath(), wantPath)
 		}
-		deleted := strings.TrimSuffix(httpTestTriggerResult("deleted"), "}") + `,"deleted_on":"2026-08-15T00:02:00Z"}`
+		deleted := strings.Replace(httpTestTriggerResult("deleted"), httpTestTriggerUUID, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", 1)
+		deleted = strings.TrimSuffix(deleted, "}") + `,"deleted_on":"2026-08-15T00:02:00Z"}`
 		httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+deleted+`,`+httpTestTriggerResult("from-api")+`]}`)
 	}))
 	defer ts.Close()
@@ -287,6 +288,25 @@ func TestWorkersBuildTriggerReadUsesWorkerListEndpoint(t *testing.T) {
 		t.Fatalf("read diagnostics: %v", resp.Diagnostics)
 	}
 	httpTestAssertTriggerState(t, resp.State, "from-api")
+}
+
+func TestWorkersBuildTriggerReadRemovesDeletedTriggerWithoutPaginationMetadata(t *testing.T) {
+	ctx := context.Background()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		deleted := strings.TrimSuffix(httpTestTriggerResult("deleted"), "}") + `,"deleted_on":"2026-08-15T00:02:00Z"}`
+		httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+deleted+`]}`)
+	}))
+	defer ts.Close()
+
+	state := httpTestTriggerState(t, httpTestTriggerModel(t, "from-state"))
+	resp := &resource.ReadResponse{State: state}
+	httpTestTriggerResource(t, ts.URL).Read(ctx, resource.ReadRequest{State: state}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("read diagnostics: %v", resp.Diagnostics)
+	}
+	if !resp.State.Raw.IsNull() {
+		t.Fatal("a matching soft-deleted trigger must be removed from state even without pagination metadata")
+	}
 }
 
 func TestWorkersBuildTriggerReadFindsTriggerOnLaterPage(t *testing.T) {

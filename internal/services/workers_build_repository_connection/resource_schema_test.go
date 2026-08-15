@@ -51,6 +51,7 @@ func TestWorkersBuildRepositoryConnectionSchemaSemantics(t *testing.T) {
 	if !validationResponse.Diagnostics.HasError() {
 		t.Fatal("provider_type must reject unsupported providers")
 	}
+	assertRepositoryConnectionInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")
 
 	for _, name := range []string{"provider_account_id", "repo_id"} {
 		attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
@@ -64,6 +65,21 @@ func TestWorkersBuildRepositoryConnectionSchemaSemantics(t *testing.T) {
 		if !response.Diagnostics.HasError() {
 			t.Fatalf("%s must reject non-numeric identifiers", name)
 		}
+	}
+}
+
+func assertRepositoryConnectionInvalidString(t *testing.T, resourceSchema schema.Schema, name, value string) {
+	t.Helper()
+	attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
+	response := &validator.StringResponse{}
+	for _, configuredValidator := range attribute.Validators {
+		configuredValidator.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root(name),
+			ConfigValue: types.StringValue(value),
+		}, response)
+	}
+	if !response.Diagnostics.HasError() {
+		t.Fatalf("%s unexpectedly accepted %q", name, value)
 	}
 }
 

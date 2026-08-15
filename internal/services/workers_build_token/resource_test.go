@@ -248,6 +248,30 @@ func TestBuildTokenReadPaginatesWithoutResultInfo(t *testing.T) {
 	}
 }
 
+func TestBuildTokenReadStopsAtPaginationLimit(t *testing.T) {
+	ctx := context.Background()
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"success":true,"result":[],"result_info":{"page":%s,"total_pages":101}}`, request.URL.Query().Get("page"))
+	}))
+	defer server.Close()
+
+	state := tokenState(t, ctx, types.StringValue(tokenTestSecret))
+	response := &resource.ReadResponse{State: state}
+	newBuildTokenResource(t, server.URL).Read(ctx, resource.ReadRequest{State: state}, response)
+	if !response.Diagnostics.HasError() {
+		t.Fatal("pagination beyond the traversal limit must fail")
+	}
+	if requests != 100 {
+		t.Fatalf("requests = %d, want 100", requests)
+	}
+	if got := diagnosticText(response.Diagnostics); !strings.Contains(got, "more Workers Builds token pages") {
+		t.Fatalf("pagination diagnostic = %q", got)
+	}
+}
+
 func TestBuildTokenReadCollection404KeepsStateAndErrors(t *testing.T) {
 	ctx := context.Background()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -314,6 +338,33 @@ func TestBuildTokenImportHydratesMetadataAndRequiresSecretReconciliation(t *test
 	}
 }
 
+func TestBuildTokenImportRejectsIncompleteMetadata(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name      string
+		tokenName string
+		tokenID   string
+	}{
+		{name: "missing token name", tokenID: tokenTestCFID},
+		{name: "missing Cloudflare token ID", tokenName: "terraform-deployment-token"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprintf(w, `{"success":true,"result":[%s],"result_info":{"page":1,"total_pages":1}}`, tokenResponse(tokenTestUUID, test.tokenName, test.tokenID, "user"))
+			}))
+			defer server.Close()
+
+			response := &resource.ImportStateResponse{State: tfsdk.State{Schema: workers_build_token.ResourceSchema(ctx)}}
+			newBuildTokenResource(t, server.URL).ImportState(ctx, resource.ImportStateRequest{ID: tokenTestAccountID + "/" + tokenTestUUID}, response)
+			if !response.Diagnostics.HasError() {
+				t.Fatal("incomplete import metadata must be rejected")
+			}
+		})
+	}
+}
+
 func TestBuildTokenImportedSecretReconciliationIsLocalOnly(t *testing.T) {
 	ctx := context.Background()
 	requests := 0
@@ -342,6 +393,50 @@ func TestBuildTokenImportedSecretReconciliationIsLocalOnly(t *testing.T) {
 	response.Diagnostics.Append(response.State.Get(ctx, &result)...)
 	if result.BuildTokenSecret.ValueString() != tokenTestSecret {
 		t.Fatal("configured secret was not recorded")
+	}
+}
+
+func TestBuildTokenRejectsUnexpectedUpdates(t *testing.T) {
+	ctx := context.Background()
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("unexpected remote request")
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name  string
+		state workers_build_token.WorkersBuildTokenModel
+		plan  workers_build_token.WorkersBuildTokenModel
+	}{
+		{
+			name:  "established secret",
+			state: tokenModel(tokenTestUUID, types.StringValue(tokenTestSecret)),
+			plan:  tokenModel(tokenTestUUID, types.StringValue(tokenTestSecret)),
+		},
+		{
+			name:  "immutable field changed during import reconciliation",
+			state: tokenModel(tokenTestUUID, types.StringNull()),
+			plan:  tokenModel(tokenTestUUID, types.StringValue(tokenTestSecret)),
+		},
+	}
+	tests[1].plan.BuildTokenName = types.StringValue("changed-name")
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state := tfsdk.State{Schema: workers_build_token.ResourceSchema(ctx)}
+			if diagnostics := state.Set(ctx, &test.state); diagnostics.HasError() {
+				t.Fatalf("set state: %v", diagnostics)
+			}
+			plan := tfsdk.Plan{Schema: workers_build_token.ResourceSchema(ctx)}
+			if diagnostics := plan.Set(ctx, &test.plan); diagnostics.HasError() {
+				t.Fatalf("set plan: %v", diagnostics)
+			}
+			response := &resource.UpdateResponse{State: state}
+			newBuildTokenResource(t, server.URL).Update(ctx, resource.UpdateRequest{State: state, Plan: plan}, response)
+			if !response.Diagnostics.HasError() {
+				t.Fatal("unexpected update must be rejected")
+			}
+		})
 	}
 }
 

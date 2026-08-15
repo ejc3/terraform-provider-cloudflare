@@ -43,7 +43,9 @@ func TestWorkersBuildTriggerEnvironmentVariablesSchemaSemantics(t *testing.T) {
 		assertEnvironmentVariableChangeRequiresReplace(t, resourceSchema, name, attribute)
 	}
 	assertEnvironmentVariableInvalidString(t, resourceSchema, "account_id", "short")
+	assertEnvironmentVariableInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")
 	assertEnvironmentVariableInvalidString(t, resourceSchema, "trigger_uuid", "not-a-uuid")
+	assertEnvironmentVariableValidString(t, resourceSchema, "trigger_uuid", "33333333-3333-0333-7333-333333333333")
 
 	variables := resourceSchema.Attributes["variables"].(schema.MapNestedAttribute)
 	if !variables.Required || variables.Optional || variables.Computed || !variables.Sensitive {
@@ -56,6 +58,21 @@ func TestWorkersBuildTriggerEnvironmentVariablesSchemaSemantics(t *testing.T) {
 	isSecret := variables.NestedObject.Attributes["is_secret"].(schema.BoolAttribute)
 	if !isSecret.Required || isSecret.Optional || isSecret.Computed {
 		t.Fatalf("variables.is_secret must be required only: %#v", isSecret)
+	}
+}
+
+func assertEnvironmentVariableValidString(t *testing.T, resourceSchema schema.Schema, name, value string) {
+	t.Helper()
+	attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
+	response := &validator.StringResponse{}
+	for _, configuredValidator := range attribute.Validators {
+		configuredValidator.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root(name),
+			ConfigValue: types.StringValue(value),
+		}, response)
+	}
+	if response.Diagnostics.HasError() {
+		t.Fatalf("%s unexpectedly rejected %q: %v", name, value, response.Diagnostics)
 	}
 }
 

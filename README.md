@@ -29,16 +29,6 @@ terraform {
 provider "cloudflare" {
   # The preferred authorization scheme for interacting with the Cloudflare API. [Create a token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/).
   api_token = "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY" # or set CLOUDFLARE_API_TOKEN env variable
-  # The previous authorization scheme for interacting with the Cloudflare API. When possible, use API tokens instead of Global API keys.
-  api_key = "144c9defac04969c7bfad8efaa8ea194" # or set CLOUDFLARE_API_KEY env variable
-  # The previous authorization scheme for interacting with the Cloudflare API, used in conjunction with a Global API key.
-  api_email = "user@example.com" # or set CLOUDFLARE_EMAIL env variable
-  # Used when interacting with the Origin CA certificates API. [View/change your key](https://developers.cloudflare.com/fundamentals/api/get-started/ca-keys/#viewchange-your-origin-ca-keys).
-  user_service_key = "v1.0-144c9defac04969c7bfad8ef-631a41d003a32d25fe878081ef365c49503f7fada600da935e2851a1c7326084b85cbf6429c4b859de8475731dc92a9c329631e6d59e6c73da7b198497172b4cefe071d90d0f5d2719" # or set CLOUDFLARE_API_USER_SERVICE_KEY env variable
-  # Sets an account ID to be used with all account-scoped requests.
-  account_id = "f037e56e89293a057740de681ac9accp" # or set CLOUDFLARE_ACCOUNT_ID env variable
-  # Sets a zone ID to be used with all zone-scoped requests.
-  zone_id = "f037e56e89293a057740de681ac9accp" # or set CLOUDFLARE_ZONE_ID env variable
 }
 
 # Configure a resource
@@ -61,14 +51,14 @@ refer to the full documentation on [the Terraform Registry](https://registry.ter
 When you initialize the provider, the following options are supported. It is recommended to use environment variables for sensitive values like access tokens.
 If an environment variable is provided, then the option does not need to be set in the terraform source.
 
-| Property         | Environment variable              | Required | Default value |
-| ---------------- | --------------------------------- | -------- | ------------- |
-| zone_id          | `CLOUDFLARE_ZONE_ID`              | false    | —             |
-| user_service_key | `CLOUDFLARE_API_USER_SERVICE_KEY` | false    | —             |
-| api_token        | `CLOUDFLARE_API_TOKEN`            | false    | —             |
-| api_key          | `CLOUDFLARE_API_KEY`              | false    | —             |
-| api_email        | `CLOUDFLARE_EMAIL`                | false    | —             |
-| account_id       | `CLOUDFLARE_ACCOUNT_ID`           | false    | —             |
+| Property                     | Environment variable                       | Required | Default value |
+| ---------------------------- | ------------------------------------------ | -------- | ------------- |
+| api_token                    | `CLOUDFLARE_API_TOKEN`                     | false    | —             |
+| api_key                      | `CLOUDFLARE_API_KEY`                       | false    | —             |
+| email                        | `CLOUDFLARE_EMAIL`                         | false    | —             |
+| api_user_service_key         | `CLOUDFLARE_API_USER_SERVICE_KEY`          | false    | —             |
+| base_url                     | `CLOUDFLARE_BASE_URL`                      | false    | —             |
+| user_agent_operator_suffix   | `CLOUDFLARE_USER_AGENT_OPERATOR_SUFFIX`    | false    | —             |
 
 ## Semantic versioning
 
@@ -79,7 +69,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/cloudflare/terraform-provider-cloudflare/issues) with questions, bugs, or suggestions.
+For fork-specific questions, bugs, or suggestions, please open an [issue](https://github.com/ejc3/terraform-provider-cloudflare/issues). Upstream-provider issues remain in the [Cloudflare repository](https://github.com/cloudflare/terraform-provider-cloudflare/issues).
 
 ## Maintenance
 

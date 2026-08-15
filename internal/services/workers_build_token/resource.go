@@ -3,6 +3,7 @@ package workers_build_token
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,7 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const buildTokenListPageSize = 200
+const (
+	buildTokenListPageSize = 200
+	buildTokenListMaxPages = 100
+)
+
+var errBuildTokenPaginationLimit = errors.New("Cloudflare returned more Workers Builds token pages than the provider will traverse")
 
 var _ resource.ResourceWithConfigure = (*WorkersBuildTokenResource)(nil)
 var _ resource.ResourceWithImportState = (*WorkersBuildTokenResource)(nil)
@@ -72,6 +78,10 @@ func (r *WorkersBuildTokenResource) Create(ctx context.Context, req resource.Cre
 			_ = res.Body.Close()
 		}
 		resp.Diagnostics.AddError("failed to create Workers Builds token", safeRequestError(res, err))
+		return
+	}
+	if res == nil || res.Body == nil {
+		resp.Diagnostics.AddError("failed to create Workers Builds token", "Cloudflare returned no response body.")
 		return
 	}
 	defer res.Body.Close()
@@ -219,7 +229,8 @@ func (r *WorkersBuildTokenResource) ImportState(ctx context.Context, req resourc
 }
 
 func (r *WorkersBuildTokenResource) find(ctx context.Context, accountID, buildTokenUUID string) (buildTokenResult, bool, int, error) {
-	for page := 1; ; page++ {
+	lastStatus := 0
+	for page := 1; page <= buildTokenListMaxPages; page++ {
 		path := fmt.Sprintf(
 			"accounts/%s/builds/tokens?page=%d&per_page=%d",
 			url.PathEscape(accountID),
@@ -236,6 +247,12 @@ func (r *WorkersBuildTokenResource) find(ctx context.Context, accountID, buildTo
 				}
 			}
 			return buildTokenResult{}, false, status, err
+		}
+		if res != nil {
+			lastStatus = res.StatusCode
+		}
+		if res == nil || res.Body == nil {
+			return buildTokenResult{}, false, lastStatus, fmt.Errorf("Cloudflare returned no response body")
 		}
 
 		var envelope buildTokenListEnvelope
@@ -269,6 +286,7 @@ func (r *WorkersBuildTokenResource) find(ctx context.Context, accountID, buildTo
 			return buildTokenResult{}, false, res.StatusCode, nil
 		}
 	}
+	return buildTokenResult{}, false, lastStatus, errBuildTokenPaginationLimit
 }
 
 func (r *WorkersBuildTokenResource) deleteRegistration(ctx context.Context, accountID, buildTokenUUID string) (int, error) {
@@ -347,6 +365,9 @@ func safeRequestError(res *http.Response, err error) string {
 }
 
 func safeStatusError(status int, err error) string {
+	if errors.Is(err, errBuildTokenPaginationLimit) {
+		return err.Error()
+	}
 	if status >= http.StatusBadRequest {
 		return fmt.Sprintf("Cloudflare API request failed with HTTP status %d. The response body is omitted because this resource handles a secret.", status)
 	}

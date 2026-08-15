@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
+var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 var workerTagPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 func ResourceSchema(_ context.Context) schema.Schema {
@@ -30,7 +30,7 @@ func ResourceSchema(_ context.Context) schema.Schema {
 			"account_id": schema.StringAttribute{
 				Description:   "Cloudflare account identifier.",
 				Required:      true,
-				Validators:    []validator.String{stringvalidator.LengthBetween(32, 32)},
+				Validators:    []validator.String{stringvalidator.RegexMatches(workerTagPattern, "must be a 32-character hexadecimal account identifier")},
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"external_script_id": schema.StringAttribute{

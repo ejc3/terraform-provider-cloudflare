@@ -14,6 +14,7 @@ import (
 )
 
 var numericIDPattern = regexp.MustCompile(`^[0-9]+$`)
+var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 var _ resource.ResourceWithConfigValidators = (*WorkersBuildRepositoryConnectionResource)(nil)
 
@@ -38,7 +39,7 @@ func ResourceSchema(_ context.Context) schema.Schema {
 				Required:      true,
 				PlanModifiers: requiresReplace,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(32, 32),
+					stringvalidator.RegexMatches(accountIDPattern, "must be a 32-character hexadecimal account identifier"),
 				},
 			},
 			"provider_type": schema.StringAttribute{

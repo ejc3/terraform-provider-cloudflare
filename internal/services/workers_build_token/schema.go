@@ -2,6 +2,7 @@ package workers_build_token
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/schemata"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -13,6 +14,8 @@ import (
 )
 
 var _ resource.ResourceWithConfigValidators = (*WorkersBuildTokenResource)(nil)
+
+var accountIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{32}$`)
 
 // ResourceSchema returns the Terraform schema for a Workers Builds deployment
 // token registration.
@@ -33,7 +36,7 @@ func ResourceSchema(_ context.Context) schema.Schema {
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(32, 32),
+					stringvalidator.RegexMatches(accountIDPattern, "must be a 32-character hexadecimal account identifier"),
 				},
 			},
 			"build_token_name": schema.StringAttribute{

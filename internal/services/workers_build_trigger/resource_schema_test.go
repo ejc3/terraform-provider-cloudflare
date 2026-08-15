@@ -68,13 +68,31 @@ func TestWorkersBuildTriggerSchemaSemantics(t *testing.T) {
 	}
 
 	assertTriggerInvalidString(t, resourceSchema, "account_id", "short")
+	assertTriggerInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")
 	assertTriggerInvalidString(t, resourceSchema, "external_script_id", "not-a-worker-tag")
 	assertTriggerInvalidString(t, resourceSchema, "repository_connection_uuid", "not-a-uuid")
 	assertTriggerInvalidString(t, resourceSchema, "build_token_uuid", "not-a-uuid")
+	assertTriggerValidString(t, resourceSchema, "repository_connection_uuid", "11111111-1111-0111-7111-111111111111")
+	assertTriggerValidString(t, resourceSchema, "build_token_uuid", "22222222-2222-0222-7222-222222222222")
 
 	for _, name := range []string{"account_id", "external_script_id", "repository_connection_uuid"} {
 		attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
 		assertTriggerChangeRequiresReplace(t, resourceSchema, name, attribute)
+	}
+}
+
+func assertTriggerValidString(t *testing.T, resourceSchema schema.Schema, name, value string) {
+	t.Helper()
+	attribute := resourceSchema.Attributes[name].(schema.StringAttribute)
+	response := &validator.StringResponse{}
+	for _, configuredValidator := range attribute.Validators {
+		configuredValidator.ValidateString(context.Background(), validator.StringRequest{
+			Path:        path.Root(name),
+			ConfigValue: types.StringValue(value),
+		}, response)
+	}
+	if response.Diagnostics.HasError() {
+		t.Fatalf("%s unexpectedly rejected %q: %v", name, value, response.Diagnostics)
 	}
 }
 

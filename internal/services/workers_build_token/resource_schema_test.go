@@ -94,6 +94,7 @@ func TestWorkersBuildTokenSchemaIdentitySemantics(t *testing.T) {
 		assertBuildTokenChangeRequiresReplace(t, resourceSchema, name, attribute)
 	}
 	assertBuildTokenInvalidString(t, resourceSchema, "account_id", "short")
+	assertBuildTokenInvalidString(t, resourceSchema, "account_id", "gggggggggggggggggggggggggggggggg")
 	assertBuildTokenInvalidString(t, resourceSchema, "build_token_name", "")
 	assertBuildTokenInvalidString(t, resourceSchema, "cloudflare_token_id", "")
 }

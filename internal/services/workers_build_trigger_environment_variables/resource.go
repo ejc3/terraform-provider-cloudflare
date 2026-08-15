@@ -56,8 +56,12 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Create(ctx context.Con
 		resp.Diagnostics.AddError("failed to create Workers Builds environment variables", err.Error())
 		return
 	}
+	if err := r.deleteUnexpected(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString(), variables, apiVariables); err != nil {
+		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
+		return
+	}
 	data.ID = data.TriggerUUID
-	resp.Diagnostics.Append(mergeAPIState(ctx, &data, variables, apiVariables)...)
+	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &data, variables, apiVariables)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -69,6 +73,9 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Read(ctx context.Conte
 	}
 	prior, diags := variablesFromTerraform(ctx, data.Variables)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	apiVariables, status, err := r.list(ctx, data.AccountID.ValueString(), data.TriggerUUID.ValueString())
 	if status == http.StatusNotFound {
 		resp.State.RemoveResource(ctx)
@@ -108,8 +115,12 @@ func (r *WorkersBuildTriggerEnvironmentVariablesResource) Update(ctx context.Con
 		resp.Diagnostics.AddError("failed to update Workers Builds environment variables", err.Error())
 		return
 	}
+	if err := r.deleteUnexpected(ctx, plan.AccountID.ValueString(), plan.TriggerUUID.ValueString(), desired, apiVariables); err != nil {
+		resp.Diagnostics.AddError("failed to delete undeclared Workers Builds environment variable", err.Error())
+		return
+	}
 	plan.ID = plan.TriggerUUID
-	resp.Diagnostics.Append(mergeAPIState(ctx, &plan, desired, apiVariables)...)
+	resp.Diagnostics.Append(mergeDesiredAPIState(ctx, &plan, desired, apiVariables)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -267,19 +278,67 @@ func removedVariableNames(previous, desired map[string]EnvironmentVariableModel)
 	return names
 }
 
+func unexpectedRemoteVariableNames(api map[string]environmentVariableResponse, desired map[string]EnvironmentVariableModel) []string {
+	var names []string
+	for name := range api {
+		if _, exists := desired[name]; !exists {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+func (r *WorkersBuildTriggerEnvironmentVariablesResource) deleteUnexpected(ctx context.Context, accountID, triggerUUID string, desired map[string]EnvironmentVariableModel, api map[string]environmentVariableResponse) error {
+	for _, name := range unexpectedRemoteVariableNames(api, desired) {
+		if err := r.deleteOne(ctx, accountID, triggerUUID, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func mergeAPIState(ctx context.Context, data *WorkersBuildTriggerEnvironmentVariablesModel, prior map[string]EnvironmentVariableModel, api map[string]environmentVariableResponse) diag.Diagnostics {
 	variables := make(map[string]EnvironmentVariableModel, len(api))
 	for name, remote := range api {
+		previous, hasPrevious := prior[name]
 		value := types.StringNull()
 		if remote.Value != nil {
 			value = types.StringValue(*remote.Value)
 		} else if remote.IsSecret {
-			if previous, ok := prior[name]; ok && !previous.Value.IsNull() && !previous.Value.IsUnknown() {
+			if hasPrevious && !previous.Value.IsNull() && !previous.Value.IsUnknown() {
 				value = previous.Value
 			}
 		}
 		variables[name] = EnvironmentVariableModel{Value: value, IsSecret: types.BoolValue(remote.IsSecret)}
 	}
+	return setVariablesState(ctx, data, variables)
+}
+
+func mergeDesiredAPIState(ctx context.Context, data *WorkersBuildTriggerEnvironmentVariablesModel, desired map[string]EnvironmentVariableModel, api map[string]environmentVariableResponse) diag.Diagnostics {
+	variables := make(map[string]EnvironmentVariableModel, len(desired))
+	for name, configured := range desired {
+		remote, exists := api[name]
+		if !exists {
+			variables[name] = configured
+			continue
+		}
+		value := types.StringNull()
+		if remote.Value != nil {
+			value = types.StringValue(*remote.Value)
+		} else if !configured.Value.IsNull() && !configured.Value.IsUnknown() {
+			// PATCH responses can omit a variable value even when they include
+			// the variable itself. Preserve the configured value so a partial
+			// response cannot erase either a plain value or a write-only secret
+			// from the post-apply state.
+			value = configured.Value
+		}
+		variables[name] = EnvironmentVariableModel{Value: value, IsSecret: types.BoolValue(remote.IsSecret)}
+	}
+	return setVariablesState(ctx, data, variables)
+}
+
+func setVariablesState(ctx context.Context, data *WorkersBuildTriggerEnvironmentVariablesModel, variables map[string]EnvironmentVariableModel) diag.Diagnostics {
 	objectType := types.ObjectType{AttrTypes: map[string]attr.Type{"value": types.StringType, "is_secret": types.BoolType}}
 	state, diagnostics := types.MapValueFrom(ctx, objectType, variables)
 	data.Variables = state

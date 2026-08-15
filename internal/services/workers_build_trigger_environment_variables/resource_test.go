@@ -64,6 +64,57 @@ func TestMergeAPIStateLeavesImportedSecretNull(t *testing.T) {
 	}
 }
 
+func TestMergeDesiredAPIStateIgnoresUndeclaredRemoteVariables(t *testing.T) {
+	ctx := context.Background()
+	data := WorkersBuildTriggerEnvironmentVariablesModel{}
+	desired := map[string]EnvironmentVariableModel{
+		"NODE_ENV": {Value: types.StringValue("old"), IsSecret: types.BoolValue(false)},
+	}
+	diags := mergeDesiredAPIState(ctx, &data, desired, map[string]environmentVariableResponse{
+		"NODE_ENV": {Value: stringPointer("production"), IsSecret: false},
+		"EXTRA":    {Value: stringPointer("remote-only"), IsSecret: false},
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+	values := envHTTPTestDecodeVariables(t, data.Variables)
+	if len(values) != 1 || values["NODE_ENV"].Value.ValueString() != "production" {
+		t.Fatalf("undeclared remote variable entered state: %#v", values)
+	}
+}
+
+func TestMergeDesiredAPIStatePreservesDesiredValueOmittedByPartialResponse(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name string
+		api  map[string]environmentVariableResponse
+	}{
+		{name: "variable omitted", api: map[string]environmentVariableResponse{}},
+		{name: "value omitted", api: map[string]environmentVariableResponse{
+			"NODE_ENV": {Value: nil, IsSecret: false},
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data := WorkersBuildTriggerEnvironmentVariablesModel{}
+			desired := map[string]EnvironmentVariableModel{
+				"NODE_ENV": {Value: types.StringValue("production"), IsSecret: types.BoolValue(false)},
+			}
+			if diags := mergeDesiredAPIState(ctx, &data, desired, test.api); diags.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", diags)
+			}
+			values := envHTTPTestDecodeVariables(t, data.Variables)
+			if len(values) != 1 || values["NODE_ENV"].Value.ValueString() != "production" {
+				t.Fatalf("partial PATCH response erased desired state: %#v", values)
+			}
+		})
+	}
+}
+
+func stringPointer(value string) *string {
+	return &value
+}
+
 func TestRemovedVariableNamesSorted(t *testing.T) {
 	previous := map[string]EnvironmentVariableModel{"Z": {}, "A": {}, "KEEP": {}}
 	desired := map[string]EnvironmentVariableModel{"KEEP": {}}
@@ -222,6 +273,49 @@ func TestWorkersBuildTriggerEnvironmentVariablesCreatePatchMapping(t *testing.T)
 	}
 }
 
+func TestWorkersBuildTriggerEnvironmentVariablesCreateDeletesUnexpectedRemoteVariables(t *testing.T) {
+	ctx := context.Background()
+	var methodsAndPaths []string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		methodsAndPaths = append(methodsAndPaths, req.Method+" "+req.URL.EscapedPath())
+		switch req.Method {
+		case http.MethodPatch:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
+				`"NODE_ENV":{"is_secret":false,"value":"production"},`+
+				`"Z_EXTRA":{"is_secret":false,"value":"z"},`+
+				`"A_EXTRA":{"is_secret":false,"value":"a"}`+
+				`}}`)
+		case http.MethodDelete:
+			envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[]}`)
+		default:
+			t.Errorf("unexpected method %s", req.Method)
+		}
+	}))
+	defer ts.Close()
+
+	model := envHTTPTestModel(t, map[string]EnvironmentVariableModel{
+		"NODE_ENV": {Value: types.StringValue("production"), IsSecret: types.BoolValue(false)},
+	})
+	model.ID = types.StringNull()
+	resp := &resource.CreateResponse{State: tfsdk.State{Schema: ResourceSchema(ctx)}}
+	envHTTPTestResource(t, ts.URL).Create(ctx, resource.CreateRequest{Plan: envHTTPTestPlan(t, model)}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("create diagnostics: %v", resp.Diagnostics)
+	}
+	want := []string{
+		http.MethodPatch + " " + envHTTPTestPath(),
+		http.MethodDelete + " " + envHTTPTestPath() + "/A_EXTRA",
+		http.MethodDelete + " " + envHTTPTestPath() + "/Z_EXTRA",
+	}
+	if fmt.Sprint(methodsAndPaths) != fmt.Sprint(want) {
+		t.Fatalf("request order = %#v, want %#v", methodsAndPaths, want)
+	}
+	variables := envHTTPTestDecodeVariables(t, envHTTPTestDecodeState(t, resp.State).Variables)
+	if len(variables) != 1 || variables["NODE_ENV"].Value.ValueString() != "production" {
+		t.Fatalf("unexpected variables in final state: %#v", variables)
+	}
+}
+
 func TestWorkersBuildTriggerEnvironmentVariablesReadGETPreservesSecret(t *testing.T) {
 	ctx := context.Background()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -247,6 +341,30 @@ func TestWorkersBuildTriggerEnvironmentVariablesReadGETPreservesSecret(t *testin
 	}
 	if variables["NODE_ENV"].Value.ValueString() != "production" {
 		t.Fatalf("GET did not reconcile plain value: %#v", variables["NODE_ENV"])
+	}
+}
+
+func TestWorkersBuildTriggerEnvironmentVariablesReadIncludesRemoteDrift(t *testing.T) {
+	ctx := context.Background()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		envHTTPTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":{`+
+			`"NODE_ENV":{"is_secret":false,"value":"production"},`+
+			`"EXTRA":{"is_secret":false,"value":"remote-only"}`+
+			`}}`)
+	}))
+	defer ts.Close()
+
+	state := envHTTPTestState(t, envHTTPTestModel(t, map[string]EnvironmentVariableModel{
+		"NODE_ENV": {Value: types.StringValue("production"), IsSecret: types.BoolValue(false)},
+	}))
+	resp := &resource.ReadResponse{State: state}
+	envHTTPTestResource(t, ts.URL).Read(ctx, resource.ReadRequest{State: state}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("read diagnostics: %v", resp.Diagnostics)
+	}
+	variables := envHTTPTestDecodeVariables(t, envHTTPTestDecodeState(t, resp.State).Variables)
+	if len(variables) != 2 || variables["EXTRA"].Value.ValueString() != "remote-only" {
+		t.Fatalf("remote drift was not hydrated into state: %#v", variables)
 	}
 }
 

@@ -20,6 +20,8 @@ import (
 var _ resource.ResourceWithConfigure = (*WorkersBuildTriggerResource)(nil)
 var _ resource.ResourceWithImportState = (*WorkersBuildTriggerResource)(nil)
 
+const triggerListMaxPages = 100
+
 func NewResource() resource.Resource { return &WorkersBuildTriggerResource{} }
 
 type WorkersBuildTriggerResource struct{ client *cloudflare.Client }
@@ -177,24 +179,34 @@ func (r *WorkersBuildTriggerResource) ImportState(ctx context.Context, req resou
 }
 
 func (r *WorkersBuildTriggerResource) find(ctx context.Context, accountID, externalScriptID, triggerUUID string) (bool, triggerAPIModel, error) {
-	var env triggerListEnvelope
-	path := fmt.Sprintf("accounts/%s/builds/workers/%s/triggers", url.PathEscape(accountID), url.PathEscape(externalScriptID))
-	status, err := r.execute(ctx, http.MethodGet, path, nil, &env)
-	if status == http.StatusNotFound {
+	basePath := fmt.Sprintf("accounts/%s/builds/workers/%s/triggers", url.PathEscape(accountID), url.PathEscape(externalScriptID))
+	for page := 1; page <= triggerListMaxPages; page++ {
+		var env triggerListEnvelope
+		path := fmt.Sprintf("%s?page=%d", basePath, page)
+		status, err := r.execute(ctx, http.MethodGet, path, nil, &env)
+		if status == http.StatusNotFound {
+			return false, triggerAPIModel{}, nil
+		}
+		if err != nil {
+			return false, triggerAPIModel{}, err
+		}
+		if err := validateEnvelope(env.Success, env.Errors); err != nil {
+			return false, triggerAPIModel{}, err
+		}
+		for _, trigger := range env.Result {
+			if trigger.TriggerUUID != nil && *trigger.TriggerUUID == triggerUUID && (trigger.DeletedOn == nil || *trigger.DeletedOn == "") {
+				return true, trigger, nil
+			}
+		}
+		if env.ResultInfo.TotalPages > 0 {
+			if page >= env.ResultInfo.TotalPages {
+				return false, triggerAPIModel{}, nil
+			}
+			continue
+		}
 		return false, triggerAPIModel{}, nil
 	}
-	if err != nil {
-		return false, triggerAPIModel{}, err
-	}
-	if err := validateEnvelope(env.Success, env.Errors); err != nil {
-		return false, triggerAPIModel{}, err
-	}
-	for _, trigger := range env.Result {
-		if trigger.TriggerUUID != nil && *trigger.TriggerUUID == triggerUUID && (trigger.DeletedOn == nil || *trigger.DeletedOn == "") {
-			return true, trigger, nil
-		}
-	}
-	return false, triggerAPIModel{}, nil
+	return false, triggerAPIModel{}, fmt.Errorf("Cloudflare returned more Workers Builds trigger pages than the provider will traverse")
 }
 
 func (r *WorkersBuildTriggerResource) execute(ctx context.Context, method, path string, body any, result any) (int, error) {

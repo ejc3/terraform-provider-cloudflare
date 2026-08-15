@@ -92,9 +92,14 @@ func TestUpdateRequestOmitsImmutableFields(t *testing.T) {
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
-	encoded, _ := json.Marshal(request)
+	encoded, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var decoded map[string]any
-	_ = json.Unmarshal(encoded, &decoded)
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
 	if _, ok := decoded["external_script_id"]; ok {
 		t.Fatalf("update serialized immutable Worker tag: %s", encoded)
 	}
@@ -282,6 +287,39 @@ func TestWorkersBuildTriggerReadUsesWorkerListEndpoint(t *testing.T) {
 		t.Fatalf("read diagnostics: %v", resp.Diagnostics)
 	}
 	httpTestAssertTriggerState(t, resp.State, "from-api")
+}
+
+func TestWorkersBuildTriggerReadFindsTriggerOnLaterPage(t *testing.T) {
+	ctx := context.Background()
+	requests := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests++
+		wantPath := "/accounts/" + httpTestAccountID + "/builds/workers/" + httpTestWorkerTag + "/triggers"
+		if req.Method != http.MethodGet || req.URL.EscapedPath() != wantPath {
+			t.Errorf("unexpected request: %s %s, want GET %s", req.Method, req.URL.EscapedPath(), wantPath)
+		}
+		switch req.URL.Query().Get("page") {
+		case "1":
+			other := strings.Replace(httpTestTriggerResult("other"), httpTestTriggerUUID, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", 1)
+			httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+other+`],"result_info":{"page":1,"total_pages":2}}`)
+		case "2":
+			httpTestWriteJSON(t, w, http.StatusOK, `{"success":true,"errors":[],"result":[`+httpTestTriggerResult("from-page-two")+`],"result_info":{"page":2,"total_pages":2}}`)
+		default:
+			t.Fatalf("unexpected page %q", req.URL.Query().Get("page"))
+		}
+	}))
+	defer ts.Close()
+
+	state := httpTestTriggerState(t, httpTestTriggerModel(t, "from-state"))
+	resp := &resource.ReadResponse{State: state}
+	httpTestTriggerResource(t, ts.URL).Read(ctx, resource.ReadRequest{State: state}, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("read diagnostics: %v", resp.Diagnostics)
+	}
+	if requests != 2 {
+		t.Fatalf("requests = %d, want 2", requests)
+	}
+	httpTestAssertTriggerState(t, resp.State, "from-page-two")
 }
 
 func TestWorkersBuildTriggerUpdateHTTPMapping(t *testing.T) {

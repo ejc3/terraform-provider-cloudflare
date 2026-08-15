@@ -381,7 +381,7 @@ func ProviderSchema(ctx context.Context) schema.Schema {
 
 			consts.BaseURLSchemaKey: schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: fmt.Sprintf("Value to override the default HTTP client base URL. Alternatively, can be configured using the `%s` environment variable.", consts.BaseURLSchemaKey),
+				MarkdownDescription: fmt.Sprintf("Value to override the default HTTP client base URL. Alternatively, can be configured using the `%s` environment variable.", consts.BaseURLEnvVarKey),
 			},
 		},
 	}
@@ -437,8 +437,7 @@ func (p *CloudflareProvider) Configure(ctx context.Context, req provider.Configu
 		PluginVersion:   pluginVersion,
 	}
 
-	if !data.UserAgentOperatorSuffix.IsNull() {
-		operatorSuffix := data.UserAgentOperatorSuffix.String()
+	if operatorSuffix, ok := configuredOperatorSuffix(data.UserAgentOperatorSuffix); ok {
 		userAgentParams.OperatorSuffix = &operatorSuffix
 	} else {
 		userAgentParams.TerraformVersion = &req.TerraformVersion
@@ -458,6 +457,13 @@ func (p *CloudflareProvider) Configure(ctx context.Context, req provider.Configu
 
 	resp.DataSourceData = client
 	resp.ResourceData = client
+}
+
+func configuredOperatorSuffix(value types.String) (string, bool) {
+	if !value.IsNull() && !value.IsUnknown() {
+		return value.ValueString(), true
+	}
+	return os.LookupEnv(consts.UserAgentOperatorSuffixEnvVarKey)
 }
 
 func (p *CloudflareProvider) ConfigValidators(_ context.Context) []provider.ConfigValidator {

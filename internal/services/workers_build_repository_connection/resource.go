@@ -135,6 +135,9 @@ func (r *WorkersBuildRepositoryConnectionResource) Delete(ctx context.Context, r
 		return
 	}
 	if err != nil {
+		if res != nil && res.Body != nil {
+			_ = res.Body.Close()
+		}
 		resp.Diagnostics.AddError("failed to delete Workers Builds repository connection", err.Error())
 		return
 	}

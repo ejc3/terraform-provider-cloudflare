@@ -61,6 +61,9 @@ jobs:
           go-version: '1.25.8'
           cache-dependency-path: go.sum
 
+      - name: Reclaim Go build cache
+        run: go clean -cache
+
       - name: Link staging branch
         if: github.repository == 'stainless-sdks/cloudflare-terraform'
         run: |

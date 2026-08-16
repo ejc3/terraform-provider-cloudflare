@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Check release environment
@@ -26,3 +27,17 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Verify signing identity
+        env:
+          IMPORTED_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        run: |
+          EXPECTED_FINGERPRINT=$(gpg --batch --show-keys --with-colons terraform-registry-signing-key.asc | awk -F: '$1 == "fpr" { print $10; exit }')
+          test "${EXPECTED_FINGERPRINT^^}" = "${IMPORTED_FINGERPRINT^^}"

@@ -75,7 +75,7 @@ func (r *APITokenResource) Create(ctx context.Context, req resource.CreateReques
 		user.TokenNewParams{},
 		option.WithRequestBody("application/json", dataBytes),
 		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to make http request", err.Error())
@@ -124,7 +124,7 @@ func (r *APITokenResource) Update(ctx context.Context, req resource.UpdateReques
 		user.TokenUpdateParams{},
 		option.WithRequestBody("application/json", dataBytes),
 		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to make http request", err.Error())
@@ -159,7 +159,7 @@ func (r *APITokenResource) Read(ctx context.Context, req resource.ReadRequest, r
 		ctx,
 		data.ID.ValueString(),
 		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if res != nil && res.StatusCode == 404 {
 		resp.Diagnostics.AddWarning("Resource not found", "The resource was not found on the server and will be removed from state.")
@@ -208,7 +208,7 @@ func (r *APITokenResource) Delete(ctx context.Context, req resource.DeleteReques
 	_, err := r.client.User.Tokens.Delete(
 		ctx,
 		data.ID.ValueString(),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to make http request", err.Error())
@@ -240,7 +240,7 @@ func (r *APITokenResource) ImportState(ctx context.Context, req resource.ImportS
 		ctx,
 		path,
 		option.WithResponseBodyInto(&res),
-		option.WithMiddleware(logging.Middleware(ctx)),
+		option.WithMiddleware(logging.RedactingMiddleware(ctx, "value")),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to make http request", err.Error())

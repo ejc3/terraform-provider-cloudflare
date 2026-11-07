@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.25.0 (2026-11-07)
+
+Full Changelog: [v5.24.0...v5.25.0](https://github.com/ejc3/terraform-provider-cloudflare/compare/v5.24.0...v5.25.0)
+
+### Features
+
+* **cloudflare_zero_trust_access_application:** `eager_redirect_cookie_setting`, which sets the Access session cookie on every hostname of a multi-hostname self-hosted application during the sign-in redirect chain instead of on the first visit to each. Optional and computed: unset keeps Cloudflare's default (true) and reads the API's value into state, so a change made outside Terraform shows in a plan. The resource, both data sources and the v4 state migration carry it.
+
 ## 5.24.0 (2026-08-15)
 
 Full Changelog: [v5.23.1...v5.24.0](https://github.com/ejc3/terraform-provider-cloudflare/compare/v5.23.1...v5.24.0)

@@ -248,6 +248,7 @@ type TargetAccessApplicationModel struct {
 	TargetCriteria              *[]*TargetTargetCriteriaModel                          `tfsdk:"target_criteria"`
 	AppLauncherVisible          types.Bool                                             `tfsdk:"app_launcher_visible"`
 	AutoRedirectToIdentity      types.Bool                                             `tfsdk:"auto_redirect_to_identity"`
+	EagerRedirectCookieSetting  types.Bool                                             `tfsdk:"eager_redirect_cookie_setting"`
 	EnableBindingCookie         types.Bool                                             `tfsdk:"enable_binding_cookie"`
 	HTTPOnlyCookieAttribute     types.Bool                                             `tfsdk:"http_only_cookie_attribute"`
 	PathCookieAttribute         types.Bool                                             `tfsdk:"path_cookie_attribute"`

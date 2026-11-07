@@ -73,6 +73,7 @@ type ZeroTrustAccessApplicationsResultDataSourceModel struct {
 	CustomNonIdentityDenyURL    types.String                                                                           `tfsdk:"custom_non_identity_deny_url" json:"custom_non_identity_deny_url,computed"`
 	CustomPages                 customfield.List[types.String]                                                         `tfsdk:"custom_pages" json:"custom_pages,computed"`
 	Destinations                customfield.NestedObjectList[ZeroTrustAccessApplicationsDestinationsDataSourceModel]   `tfsdk:"destinations" json:"destinations,computed"`
+	EagerRedirectCookieSetting  types.Bool                                                                             `tfsdk:"eager_redirect_cookie_setting" json:"eager_redirect_cookie_setting,computed"`
 	EnableBindingCookie         types.Bool                                                                             `tfsdk:"enable_binding_cookie" json:"enable_binding_cookie,computed"`
 	HTTPOnlyCookieAttribute     types.Bool                                                                             `tfsdk:"http_only_cookie_attribute" json:"http_only_cookie_attribute,computed"`
 	LogoURL                     types.String                                                                           `tfsdk:"logo_url" json:"logo_url,computed"`

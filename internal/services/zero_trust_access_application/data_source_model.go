@@ -33,6 +33,7 @@ type ZeroTrustAccessApplicationDataSourceModel struct {
 	CustomDenyURL               types.String                                                                          `tfsdk:"custom_deny_url" json:"custom_deny_url,computed"`
 	CustomNonIdentityDenyURL    types.String                                                                          `tfsdk:"custom_non_identity_deny_url" json:"custom_non_identity_deny_url,computed"`
 	Domain                      types.String                                                                          `tfsdk:"domain" json:"domain,computed"`
+	EagerRedirectCookieSetting  types.Bool                                                                            `tfsdk:"eager_redirect_cookie_setting" json:"eager_redirect_cookie_setting,computed"`
 	EnableBindingCookie         types.Bool                                                                            `tfsdk:"enable_binding_cookie" json:"enable_binding_cookie,computed"`
 	HeaderBgColor               types.String                                                                          `tfsdk:"header_bg_color" json:"header_bg_color,computed"`
 	HTTPOnlyCookieAttribute     types.Bool                                                                            `tfsdk:"http_only_cookie_attribute" json:"http_only_cookie_attribute,computed"`

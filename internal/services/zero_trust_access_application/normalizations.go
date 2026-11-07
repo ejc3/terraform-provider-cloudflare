@@ -186,6 +186,7 @@ func normalizeReadZeroTrustApplicationAPIData(ctx context.Context, data, stateDa
 	normalizeFalseAndNullBool(&data.AutoRedirectToIdentity, stateData.AutoRedirectToIdentity)
 	if slices.Contains(selfHostedAppTypes, data.Type.ValueString()) {
 		normalizeTrueAndNullBool(&data.HTTPOnlyCookieAttribute, stateData.HTTPOnlyCookieAttribute)
+		normalizeTrueAndNullBool(&data.EagerRedirectCookieSetting, stateData.EagerRedirectCookieSetting)
 		normalizeFalseAndNullBool(&data.SkipInterstitial, stateData.SkipInterstitial)
 		normalizeFalseAndNullBool(&data.AllowIframe, stateData.AllowIframe)
 		normalizeFalseAndNullBool(&data.PathCookieAttribute, stateData.PathCookieAttribute)

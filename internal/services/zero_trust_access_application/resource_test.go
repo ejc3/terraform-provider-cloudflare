@@ -1022,6 +1022,44 @@ func TestAccCloudflareAccessApplication_WithHTTPOnlyCookieAttributeSetToFalse(t 
 	})
 }
 
+// One application for two hostnames with the session cookie set on both at sign-in, so a
+// page on one hostname can open a WebSocket to the other without a redirect.
+func TestAccCloudflareAccessApplication_WithEagerRedirectCookieSetting(t *testing.T) {
+	rnd := utils.GenerateRandomResourceName()
+	name := fmt.Sprintf("cloudflare_zero_trust_access_application.%s", rnd)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.TestAccPreCheck(t)
+		},
+		ProtoV6ProviderFactories: acctest.TestAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCloudflareAccessApplicationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudflareAccessApplicationConfigWithEagerRedirectCookie(rnd, zoneID, domain, "true"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(name, "type", "self_hosted"),
+					resource.TestCheckResourceAttr(name, "destinations.#", "2"),
+					resource.TestCheckResourceAttr(name, "eager_redirect_cookie_setting", "true"),
+				),
+			},
+			{
+				// Ensures no diff on last plan
+				Config:   testAccCloudflareAccessApplicationConfigWithEagerRedirectCookie(rnd, zoneID, domain, "true"),
+				PlanOnly: true,
+			},
+			{
+				Config: testAccCloudflareAccessApplicationConfigWithEagerRedirectCookie(rnd, zoneID, domain, "false"),
+				Check:  resource.TestCheckResourceAttr(name, "eager_redirect_cookie_setting", "false"),
+			},
+			{
+				Config:   testAccCloudflareAccessApplicationConfigWithEagerRedirectCookie(rnd, zoneID, domain, "false"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccCloudflareAccessApplication_WithSameSiteCookieAttribute(t *testing.T) {
 	rnd := utils.GenerateRandomResourceName()
 	name := fmt.Sprintf("cloudflare_zero_trust_access_application.%s", rnd)
@@ -1500,6 +1538,10 @@ func testAccCloudflareAccessApplicationConfigWithMultipleIdps(rnd, zoneID, domai
 
 func testAccCloudflareAccessApplicationConfigWithHTTPOnlyCookieAttribute(rnd, zoneID, domain string) string {
 	return acctest.LoadTestCase("accessapplicationconfigwithhttponlycookieattribute.tf", rnd, zoneID, domain)
+}
+
+func testAccCloudflareAccessApplicationConfigWithEagerRedirectCookie(rnd, zoneID, domain, value string) string {
+	return acctest.LoadTestCase("accessapplicationconfigwitheagerredirectcookie.tf", rnd, zoneID, domain, value)
 }
 
 func testAccCloudflareAccessApplicationConfigWithHTTPOnlyCookieAttributeSetToFalse(rnd, zoneID, domain string) string {

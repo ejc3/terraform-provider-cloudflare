@@ -83,6 +83,10 @@ func DataSourceSchema(ctx context.Context) schema.Schema {
 				Description: "The primary hostname and path secured by Access. This domain will be displayed if the app is visible in the App Launcher. Worker-destination applications do not require a domain.",
 				Computed:    true,
 			},
+			"eager_redirect_cookie_setting": schema.BoolAttribute{
+				Description: "Preemptively sets the Access session cookie on every hostname in a multi-hostname self-hosted application during the initial redirect chain, rather than setting it lazily on first visit. Cloudflare defaults it to true.",
+				Computed:    true,
+			},
 			"enable_binding_cookie": schema.BoolAttribute{
 				Description: "Enables the binding cookie, which increases security against compromised authorization tokens and CSRF attacks.",
 				Computed:    true,

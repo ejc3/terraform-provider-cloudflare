@@ -43,6 +43,7 @@ type ZeroTrustAccessApplicationModel struct {
 	TargetCriteria              *[]*ZeroTrustAccessApplicationTargetCriteriaModel                          `tfsdk:"target_criteria" json:"target_criteria,optional"`
 	AppLauncherVisible          types.Bool                                                                 `tfsdk:"app_launcher_visible" json:"app_launcher_visible,computed_optional"`
 	AutoRedirectToIdentity      types.Bool                                                                 `tfsdk:"auto_redirect_to_identity" json:"auto_redirect_to_identity,optional"`
+	EagerRedirectCookieSetting  types.Bool                                                                 `tfsdk:"eager_redirect_cookie_setting" json:"eager_redirect_cookie_setting,computed_optional"`
 	EnableBindingCookie         types.Bool                                                                 `tfsdk:"enable_binding_cookie" json:"enable_binding_cookie,optional"`
 	HTTPOnlyCookieAttribute     types.Bool                                                                 `tfsdk:"http_only_cookie_attribute" json:"http_only_cookie_attribute,computed_optional"`
 	PathCookieAttribute         types.Bool                                                                 `tfsdk:"path_cookie_attribute" json:"path_cookie_attribute,optional"`

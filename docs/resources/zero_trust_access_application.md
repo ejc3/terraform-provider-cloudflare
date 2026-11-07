@@ -149,6 +149,7 @@ resource "cloudflare_zero_trust_access_application" "example_worker_native_acces
 - `custom_pages` (List of String) The custom pages that will be displayed when applicable for this application
 - `destinations` (Attributes List) List of destinations secured by Access. This supersedes `self_hosted_domains` to allow for more flexibility in defining different types of domains. If `destinations` are provided, then `self_hosted_domains` will be ignored. (see [below for nested schema](#nestedatt--destinations))
 - `domain` (String) The primary hostname and path secured by Access. This domain will be displayed if the app is visible in the App Launcher. Omit this field for self-hosted applications that use a Worker destination.
+- `eager_redirect_cookie_setting` (Boolean) Preemptively sets the Access session cookie on every hostname in a multi-hostname self-hosted application during the initial redirect chain, rather than setting it lazily on first visit. Cloudflare defaults it to true.
 - `enable_binding_cookie` (Boolean) Enables the binding cookie, which increases security against compromised authorization tokens and CSRF attacks.
 - `footer_links` (Attributes List) The links in the App Launcher footer. (see [below for nested schema](#nestedatt--footer_links))
 - `header_bg_color` (String) The background color of the App Launcher header.
